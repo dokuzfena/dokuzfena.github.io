@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dokuz FEN A - Resmi</title>
+    <title>Dokuz FEN A-Resmi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,17 +20,17 @@
             color: var(--text-dark);
             font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Taşmaları engellemek için */
         }
 
         header {
             border-bottom: 1px solid var(--border);
-            padding: 20px 0;
+            padding: 15px 0;
             position: sticky;
             top: 0;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
-            z-index: 1000;
+            z-index: 100;
         }
 
         .container {
@@ -43,6 +43,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap; /* Mobilde alta geçebilmesi için */
         }
 
         .logo {
@@ -50,7 +51,11 @@
             font-size: 1.8rem;
             letter-spacing: -1px;
             text-decoration: none;
-            color: var(--accent);
+            color: var(--text-dark);
+        }
+
+        .nav-links {
+            display: flex;
         }
 
         .nav-links a {
@@ -61,104 +66,120 @@
             letter-spacing: 1px;
             margin-left: 25px;
             transition: color 0.3s;
+            white-space: nowrap;
         }
 
-        .nav-links a:hover { color: var(--accent); }
+        .nav-links a:hover {
+            color: var(--accent);
+        }
 
+        /* Haber Grid Yapısı */
         .hero-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 40px;
-            margin-top: 50px;
+            margin-top: 40px;
         }
 
         .main-news img {
             width: 100%;
-            aspect-ratio: 16/9;
+            height: auto;
+            aspect-ratio: 16 / 9;
             object-fit: cover;
-            filter: grayscale(100%);
-            transition: filter 0.6s ease;
-            border-radius: 4px;
+            filter: grayscale(20%);
+            transition: filter 0.5s;
+            border-radius: 2px;
         }
 
-        .main-news:hover img { filter: grayscale(0%); }
+        .main-news img:hover {
+            filter: grayscale(0%);
+        }
 
         .category {
             font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
             color: var(--text-light);
-            margin-top: 25px;
+            margin-top: 20px;
             display: block;
             letter-spacing: 2px;
         }
 
         h2 {
             font-family: 'Playfair Display', serif;
-            font-size: clamp(1.8rem, 5vw, 2.8rem);
-            margin: 15px 0;
+            font-size: clamp(1.8rem, 5vw, 2.5rem); /* Dinamik font boyutu */
+            margin: 10px 0;
             line-height: 1.2;
         }
 
         .excerpt {
             color: var(--text-light);
+            line-height: 1.6;
             font-weight: 300;
-            font-size: 1.1rem;
-            max-width: 600px;
+            font-size: 1.05rem;
         }
 
-        /* Sidebar Styling */
+        /* Yan Sütun */
         .sidebar-item {
             border-bottom: 1px solid var(--border);
-            padding: 15px 0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-item:last-child {
+            border-bottom: none;
         }
 
         .sidebar-item h3 {
             font-size: 1.1rem;
             margin: 8px 0;
+            line-height: 1.4;
             font-family: 'Playfair Display', serif;
-            font-weight: 700;
         }
 
-        /* Footer */
         .footer-line {
             margin-top: 80px;
-            padding: 40px 0 100px 0; /* Mobilde menü için ekstra boşluk */
+            padding: 40px 0;
             border-top: 1px solid var(--border);
             text-align: center;
             font-size: 0.8rem;
             color: #999;
         }
 
-        /* Mobil Alt Menü (Yeni) */
-        .mobile-nav {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid var(--border);
-            padding: 15px;
-            z-index: 1001;
-            justify-content: space-around;
-        }
-
-        .mobile-nav a {
-            text-decoration: none;
-            color: var(--text-dark);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        /* Media Queries */
+        /* Mobil Düzenlemeler */
         @media (max-width: 768px) {
-            .hero-grid { grid-template-columns: 1fr; gap: 30px; }
-            .nav-links { display: none; }
-            .mobile-nav { display: flex; } /* Mobilde menü görünür olur */
-            header { padding: 15px 0; }
-            .logo { font-size: 1.5rem; }
+            .hero-grid { 
+                grid-template-columns: 1fr; 
+                gap: 30px;
+                margin-top: 20px;
+            }
+            
+            nav {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .logo {
+                font-size: 1.5rem;
+            }
+
+            .nav-links {
+                width: 100%;
+                justify-content: flex-start;
+                overflow-x: auto; /* Mobilde yana kaydırılabilir menü */
+                padding-bottom: 10px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .nav-links a {
+                margin-left: 0;
+                margin-right: 20px;
+                font-size: 0.75rem;
+            }
+
+            .nav-links::-webkit-scrollbar {
+                display: none; /* Scroll barı gizle (opsiyonel) */
+            }
         }
     </style>
 </head>
@@ -181,27 +202,28 @@
     <main class="container">
         <section class="hero-grid">
             <article class="main-news">
-                <img src="https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&q=80&w=1000" alt="Haber">
-                <span class="category">Konsept</span>
-                <h2>Amacı amaçsızlıktan doğan, can sıkıntısı mahsulü bir site.</h2>
-                <p class="excerpt">İnternetin ruhuna uygun şekilde; hiçbir beklentiye girmeden, sadece var olduğu için devam eden bir proje.</p>
+                <img src="https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&q=80&w=1000" alt="Haber Görseli">
+                <span class="category">Sitemiz</span>
+                <h2>Amacı amaçsızlıktan doğan sitedir</h2>
+                <p class="excerpt">Sitenin hiçbir amacı yok ama geliştirilmeye devam edilecek. Çünkü canım çok sıkılıyor.</p>
             </article>
 
             <aside class="sidebar">
                 <div class="sidebar-item">
-                    <span class="category">Gelişme</span>
-                    <h3>Oyunlar Bölümü</h3>
-                    <p style="font-size: 0.9rem; color: #666;">Zaman öldürmek için birebir.</p>
+                    <span class="category">Oyunlar</span>
+                    <h3>En iyisi burada olacak</h3>
                 </div>
                 <div class="sidebar-item">
-                    <span class="category">Topluluk</span>
-                    <h3>Blog & Yazar Kadrosu</h3>
-                    <p style="font-size: 0.9rem; color: #666;">Fikirlerin havada uçuştuğu o köşe.</p>
+                    <span class="category">Blog</span>
+                    <h3>Burası aktifleşir mi bilmem ama aktifleştirirsek burada 20-30 kişi falan blog yazabilir</h3>
                 </div>
                 <div class="sidebar-item">
-                    <span class="category">Geçmiş</span>
-                    <h3>Uydurma Bir Tarihçe</h3>
-                    <p style="font-size: 0.9rem; color: #666;">Gelecekten bakınca anlam kazanacak.</p>
+                    <span class="category">Sosyal Medya</span>
+                    <h3>Bu bölümde, tahmin edebileceğiniz üzere, sosyal medya hesaplarımız olacak</h3>
+                </div>
+                <div class="sidebar-item">
+                    <span class="category">Tarihçe</span>
+                    <h3>Ben buraya birşeyler uydururum</h3>
                 </div>
             </aside>
         </section>
@@ -209,16 +231,9 @@
 
     <footer class="footer-line">
         <div class="container">
-            &copy; 2026 Dokuz FEN A — Tüm Hakları Saklıdır.
+            &copy; 2026 Dokuz FEN A - Tüm hakları saklıdır.
         </div>
     </footer>
-
-    <nav class="mobile-nav">
-        <a href="dokuzfenagames.html">Oyunlar</a>
-        <a href="#">Blog</a>
-        <a href="#">Sosyal</a>
-        <a href="#">Tarih</a>
-    </nav>
 
 </body>
 </html>
