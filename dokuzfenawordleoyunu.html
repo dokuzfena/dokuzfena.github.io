@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Wordle Pro | Dokuz FEN A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --correct: #538d4e;
+            --present: #b59f3b;
+            --absent: #3a3a3c;
+            --border: #3a3a3c;
+            --text: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            /* iPhone alt bar ve Android navigasyon çubuğu için koruma */
+            height: -webkit-fill-available; 
+            overflow: hidden;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1a1a1a;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+
+        .level-info { font-family: 'Playfair Display', serif; font-size: 1.2rem; }
+        .back-btn { color: #666; text-decoration: none; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        #board-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 10px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-rows: repeat(6, 1fr);
+            grid-gap: 5px;
+        }
+
+        .row { display: grid; grid-template-columns: repeat(5, 1fr); grid-gap: 5px; }
+
+        .tile {
+            width: clamp(45px, 13vw, 58px);
+            height: clamp(45px, 13vw, 58px);
+            border: 2px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tile[data-state="correct"] { background: var(--correct); border-color: var(--correct); }
+        .tile[data-state="present"] { background: var(--present); border-color: var(--present); }
+        .tile[data-state="absent"] { background: var(--absent); border-color: var(--absent); }
+        
+        .animate { transform: scale(1.08); border-color: #777; }
+
+        #keyboard {
+            width: 100%;
+            max-width: 500px;
+            padding: 10px;
+            /* Alt kısımda navigasyon tuşları için güvenli boşluk */
+            padding-bottom: clamp(30px, 8vh, 60px); 
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-sizing: border-box;
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            touch-action: manipulation;
+        }
+
+        .key {
+            background: #818384;
+            color: white;
+            border: 0;
+            border-radius: 4px;
+            height: clamp(45px, 7vh, 58px);
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            text-transform: uppercase;
+            font-size: clamp(0.7rem, 2.5vw, 0.9rem);
+            transition: opacity 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .key.large { flex: 1.5; font-size: 0.65rem; }
+        .key:active { opacity: 0.6; }
+
+        #message {
+            position: absolute;
+            top: 12%;
+            background: white;
+            color: black;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        .final-screen { text-align: center; padding: 20px; animation: fadeIn 1s; }
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="dokuzfenagames.html" class="back-btn">← Menü</a>
+        <div class="level-info">Level <span id="current-level">1</span></div>
+        <div style="width: 40px"></div>
+    </header>
+
+    <div id="message"></div>
+
+    <div id="board-container">
+        <div id="board"></div>
+    </div>
+
+    <div id="keyboard"></div>
+
+    <script>
+        // 5 Harfli Kelime Havuzu (Burayı 100'e tamamlayabilirsin)
+        const WORDS = [
+            "DENİZ", "GÜNEŞ", "KALEM", "KİTAP", "BEYİN", "DOKUZ", "SINAV", "RADYO", "SEHPA", "DÜNYA",
+            "METİN", "GİZEM", "ŞEHİR", "BAHAR", "KÖPRÜ", "MÜZİK", "SAYFA", "ÖRNEK", "CEVAP", "SORGU", "SATEN", "KAŞIK", "ÇATAL", "TABAK", "BIÇAK", "DOLAP", "ÇANTA", "GÜNEŞ", "DENİZ", "VENÜS", "MERİÇ", "IRMAK", "BULUT", "KIRAN", "BELDE", "GEÇİT", "ZEHİR", "ÇEŞME", "BAHÇE", "ÇİÇEK", "BÖCEK", "ARABA", "TEKNE", "METRO", "KAYIK", "DORSE", "ARMUT", "KAVUN", "KİRAZ", "CEVİZ", "ÇİLEK", "HURMA", "İNCİR", "BEYAZ", "SİYAH", "YEŞİL", "PEMBE", "KAHVE", "BORDO", "AKŞAM", "SABAH", "ŞAFAK", "HAFTA", "EYLÜL", "NİSAN", "MAYIS", "KASIM", "GÜZEL", "KİBAR", "CESUR", "KORKU", "SEVGİ", "SAYGI", "HUZUR", "MUTLU", "ÜZGÜN", "ÇEVİK", "HIZLI", "YAVAŞ", "GÜÇLÜ", "ZAYIF", "SEMİZ", "KÜÇÜK", "BÜYÜK", "SICAK", "SOĞUK", "SERİN", "NEMLİ", "PAMUK", "ESNEK", "ADRES", "ALICI", "AMBAR", "ANTEN", "ARŞİV", "ATLAS", "AVİZE", "AYNEN", "AYRAÇ", "BALIK"
+        ];
+
+        let level = parseInt(localStorage.getItem("wordleLevel")) || 1;
+        let targetWord;
+        let currentGuess = "";
+        let guesses = [];
+        let gameOver = false;
+
+        const board = document.getElementById("board");
+        const keyboard = document.getElementById("keyboard");
+        const message = document.getElementById("message");
+
+        function initGame() {
+            if (level > WORDS.length) {
+                showFinalScreen();
+                return;
+            }
+
+            targetWord = WORDS[level - 1].toUpperCase();
+            document.getElementById("current-level").innerText = level;
+            currentGuess = "";
+            guesses = [];
+            gameOver = false;
+            keyboard.style.visibility = "visible";
+            
+            createBoard();
+            createKeyboard();
+        }
+
+        function createBoard() {
+            board.innerHTML = "";
+            for (let i = 0; i < 6; i++) {
+                const row = document.createElement("div");
+                row.className = "row";
+                for (let j = 0; j < 5; j++) {
+                    const tile = document.createElement("div");
+                    tile.className = "tile";
+                    row.appendChild(tile);
+                }
+                board.appendChild(row);
+            }
+        }
+
+        function createKeyboard() {
+            const keys = [
+                ["E", "R", "T", "Y", "U", "I", "O", "P", "Ğ", "Ü"],
+                ["A", "S", "D", "F", "G", "H", "J", "K", "L", "Ş", "İ"],
+                ["ENTER", "Z", "C", "V", "B", "N", "M", "Ö", "Ç", "SİL"]
+            ];
+            keyboard.innerHTML = "";
+            keys.forEach(rowKeys => {
+                const row = document.createElement("div");
+                row.className = "key-row";
+                rowKeys.forEach(key => {
+                    const button = document.createElement("button");
+                    button.innerText = key;
+                    button.className = "key" + (key.length > 1 ? " large" : "");
+                    button.onclick = (e) => {
+                        e.preventDefault();
+                        handleInput(key);
+                    };
+                    row.appendChild(button);
+                });
+                keyboard.appendChild(row);
+            });
+        }
+
+        function handleInput(key) {
+            if (gameOver) return;
+
+            if (key === "ENTER") {
+                if (currentGuess.length < 5) {
+                    showMessage("Eksik harf!");
+                    return;
+                }
+                submitGuess();
+            } else if (key === "SİL" || key === "Backspace") {
+                currentGuess = currentGuess.slice(0, -1);
+            } else if (currentGuess.length < 5 && key.length === 1) {
+                currentGuess += key.toUpperCase();
+            }
+            updateBoard();
+        }
+
+        function updateBoard() {
+            const row = board.children[guesses.length];
+            if (!row) return;
+            for (let i = 0; i < 5; i++) {
+                const tile = row.children[i];
+                tile.innerText = currentGuess[i] || "";
+                if (currentGuess[i]) {
+                    tile.classList.add("animate");
+                    setTimeout(() => tile.classList.remove("animate"), 100);
+                }
+            }
+        }
+
+        function submitGuess() {
+            const row = board.children[guesses.length];
+            const guessArray = currentGuess.split("");
+            const targetArray = targetWord.split("");
+            const result = new Array(5).fill("absent");
+
+            // Doğru yerler
+            guessArray.forEach((char, i) => {
+                if (char === targetArray[i]) {
+                    result[i] = "correct";
+                    targetArray[i] = null;
+                }
+            });
+
+            // Yanlış yerler
+            guessArray.forEach((char, i) => {
+                if (result[i] !== "correct" && targetArray.includes(char)) {
+                    result[i] = "present";
+                    targetArray[targetArray.indexOf(char)] = null;
+                }
+            });
+
+            result.forEach((state, i) => {
+                setTimeout(() => {
+                    const tile = row.children[i];
+                    tile.setAttribute("data-state", state);
+                    tile.style.transform = "rotateX(360deg)";
+                }, i * 150);
+            });
+
+            guesses.push(currentGuess);
+            
+            if (currentGuess === targetWord) {
+                gameOver = true;
+                setTimeout(() => {
+                    level++;
+                    localStorage.setItem("wordleLevel", level);
+                    showMessage("Harika! Sonraki Seviye...");
+                    setTimeout(initGame, 1500);
+                }, 1200);
+            } else if (guesses.length === 6) {
+                gameOver = true;
+                showMessage("Kelime: " + targetWord);
+                setTimeout(initGame, 3500);
+            }
+            currentGuess = "";
+        }
+
+        function showMessage(text) {
+            message.innerText = text;
+            message.style.display = "block";
+            setTimeout(() => message.style.display = "none", 2500);
+        }
+
+        function showFinalScreen() {
+            board.innerHTML = `
+                <div class="final-screen">
+                    <h1 style="font-family:'Playfair Display'; font-size: 2.5rem;">100/100</h1>
+                    <p>Tüm seviyeleri tamamladın!</p>
+                    <button class="key large" onclick="restartGame()" style="margin: 20px auto; width: 200px; height: 50px;">Başa Dön</button>
+                </div>
+            `;
+            keyboard.style.visibility = "hidden";
+        }
+
+        function restartGame() {
+            localStorage.removeItem("wordleLevel");
+            level = 1;
+            initGame();
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") handleInput("ENTER");
+            else if (e.key === "Backspace") handleInput("SİL");
+            else if (/^[a-zA-ZğüşiöçĞÜŞİÖÇ]$/.test(e.key)) handleInput(e.key);
+        });
+
+        initGame();
+    </script>
+</body>
+</html>
