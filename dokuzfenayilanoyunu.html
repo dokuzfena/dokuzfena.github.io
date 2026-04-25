@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Snake Pro | Dokuz FEN A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --card-bg: #141414;
+            --accent: #ffffff;
+            --snake-head: #ffffff;
+            --snake-body: rgba(255, 255, 255, 0.4);
+            --food: #ff3e3e;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Üst Bar */
+        header {
+            width: 100%;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 600px;
+        }
+
+        .back-btn {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .back-btn:hover { color: var(--accent); }
+
+        .score-container {
+            text-align: right;
+        }
+
+        #score {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            display: block;
+        }
+
+        /* Oyun Alanı */
+        #game-wrapper {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #222;
+        }
+
+        canvas {
+            display: block;
+            background-color: var(--card-bg);
+            /* Mobilde ekranın %90'ını kaplasın ama 500px'i geçmesin */
+            max-width: 90vw;
+            max-height: 60vh;
+        }
+
+        /* Oyun Sonu Ekranı */
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+
+        #overlay h2 { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 20px; }
+        
+        .btn-restart {
+            background: white;
+            color: black;
+            padding: 12px 30px;
+            border: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+
+        .hints {
+            margin-top: 30px;
+            color: #444;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="dokuzfenagames.html" class="back-btn">← Vazgeç</a>
+        <div class="score-container">
+            <span id="score">0</span>
+        </div>
+    </header>
+
+    <div id="game-wrapper">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div id="overlay">
+            <h2>EYVAH.</h2>
+            <button class="btn-restart" onclick="resetGame()">Tekrar Dene</button>
+        </div>
+    </div>
+
+    <div class="hints">Swipe or Use Arrows</div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score");
+        const overlay = document.getElementById("overlay");
+
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let score = 0;
+        let dx = 0;
+        let dy = 0;
+        let snake = [{x: 10, y: 10}, {x: 10, y: 11}, {x: 10, y: 12}];
+        let food = {x: 5, y: 5};
+        let lastTime = 0;
+        let speed = 7; // Başlangıç hızı (daha düşük sayı = daha yavaş)
+
+        // Kontroller
+        document.addEventListener("keydown", changeDirection);
+        
+        let touchStartX = 0;
+        let touchStartY = 0;
+        canvas.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, {passive: false});
+
+        canvas.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
+
+        canvas.addEventListener('touchend', e => {
+            let diffX = e.changedTouches[0].clientX - touchStartX;
+            let diffY = e.changedTouches[0].clientY - touchStartY;
+            
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 0 && dx === 0) { dx = 1; dy = 0; }
+                else if (diffX < 0 && dx === 0) { dx = -1; dy = 0; }
+            } else {
+                if (diffY > 0 && dy === 0) { dx = 0; dy = 1; }
+                else if (diffY < 0 && dy === 0) { dx = 0; dy = -1; }
+            }
+        });
+
+        function changeDirection(event) {
+            const LEFT_KEY = 37; const RIGHT_KEY = 39;
+            const UP_KEY = 38; const DOWN_KEY = 40;
+
+            const keyPressed = event.keyCode;
+            if (keyPressed === LEFT_KEY && dx === 0) { dx = -1; dy = 0; }
+            if (keyPressed === UP_KEY && dy === 0) { dx = 0; dy = -1; }
+            if (keyPressed === RIGHT_KEY && dx === 0) { dx = 1; dy = 0; }
+            if (keyPressed === DOWN_KEY && dy === 0) { dx = 0; dy = 1; }
+        }
+
+        function drawGame(time) {
+            window.requestAnimationFrame(drawGame);
+            
+            // Hız Kontrolü (FPS sınırlama)
+            if ((time - lastTime) < 1000 / (speed + Math.floor(score/5))) return;
+            lastTime = time;
+
+            clearCanvas();
+            if(dx !== 0 || dy !== 0) moveSnake();
+            drawFood();
+            drawSnake();
+            checkGameOver();
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = "#141414";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // İnce Grid Çizimi (Estetik için)
+            ctx.strokeStyle = "#1a1a1a";
+            for(let i=0; i<canvas.width; i+=gridSize) {
+                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke();
+            }
+        }
+
+        function drawSnake() {
+            snake.forEach((part, index) => {
+                const isHead = index === 0;
+                ctx.fillStyle = isHead ? "white" : "rgba(255,255,255,0.3)";
+                
+                // Yumuşak köşeli yılan parçaları
+                const r = 4; // radius
+                const x = part.x * gridSize;
+                const y = part.y * gridSize;
+                const s = gridSize - 2;
+
+                ctx.beginPath();
+                ctx.roundRect(x+1, y+1, s, s, isHead ? 6 : 4);
+                ctx.fill();
+
+                if(isHead) { // Kafaya parlama efekti
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = "white";
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+            });
+        }
+
+        function moveSnake() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+
+            if (snake[0].x === food.x && snake[0].y === food.y) {
+                score++;
+                scoreElement.innerHTML = score;
+                createFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function createFood() {
+            food = {
+                x: Math.floor(Math.random() * tileCount),
+                y: Math.floor(Math.random() * tileCount)
+            };
+            // Yılanın üstünde çıkmasın
+            snake.forEach(part => {
+                if (part.x === food.x && part.y === food.y) createFood();
+            });
+        }
+
+        function drawFood() {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#ff3e3e";
+            ctx.fillStyle = "#ff3e3e";
+            ctx.beginPath();
+            ctx.arc(food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2, gridSize/3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function checkGameOver() {
+            const head = snake[0];
+            
+            // Duvarlara çarpma
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                endGame();
+            }
+
+            // Kendine çarpma
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    endGame();
+                }
+            }
+        }
+
+        function endGame() {
+            dx = 0; dy = 0;
+            overlay.style.display = "flex";
+        }
+
+        function resetGame() {
+            score = 0;
+            scoreElement.innerHTML = score;
+            snake = [{x: 10, y: 10}, {x: 10, y: 11}, {x: 10, y: 12}];
+            dx = 0; dy = 0;
+            overlay.style.display = "none";
+            createFood();
+        }
+
+        createFood();
+        requestAnimationFrame(drawGame);
+    </script>
+</body>
+</html>

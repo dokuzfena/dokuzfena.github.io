@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oyunlar | Dokuz FEN A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text-dark: #1a1a1a;
+            --text-light: #666666;
+            --border: #eeeeee;
+            --accent: #000000;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text-dark);
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding: 15px 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            text-decoration: none;
+            color: var(--text-dark);
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover { color: var(--accent); }
+
+        /* Oyunlar Başlık Section */
+        .intro {
+            text-align: center;
+            padding: 60px 0 40px;
+        }
+
+        .intro h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .intro p {
+            color: var(--text-light);
+            font-weight: 300;
+            font-size: 1.1rem;
+        }
+
+        /* Oyun Grid Yapısı */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 100px;
+        }
+
+        .game-card {
+            border: 1px solid var(--border);
+            padding: 30px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .game-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transform: translateY(-5px);
+        }
+
+        .game-card .category {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-light);
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .game-card h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            margin: 0 0 15px 0;
+        }
+
+        .game-card p {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        /* Buton Stili */
+        .play-btn {
+            display: inline-block;
+            text-decoration: none;
+            background-color: var(--accent);
+            color: white;
+            padding: 12px 25px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            transition: opacity 0.3s;
+        }
+
+        .play-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* Mobil */
+        @media (max-width: 768px) {
+            .intro h1 { font-size: 2.2rem; }
+            .games-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <nav>
+                <a href="index.html" class="logo">Dokuz FEN A</a>
+                <a href="index.html" class="back-link">← Geri Dön</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="intro">
+            <h1>Oyunlar</h1>
+            <p>Oyun oyna kardeş. Hatta gel bizim sitede oyna</p>
+        </section>
+
+        <section class="games-grid">
+            <div class="game-card">
+                <div>
+                    <span class="category">Klasik</span>
+                    <h3>Yılan Oyunu</h3>
+                    <p>Eskimeyen bir klasik. Olmazsa olmaz.</p>
+                </div>
+                <a href="#" class="play-btn">Oyna</a>
+            </div>
+
+            <div class="game-card">
+                <div>
+                    <span class="category">Zeka</span>
+                    <h3>Kelime Tahmini</h3>
+                    <p>Harfleri doğru yerleştir, gizli kelimeyi bul. Bakalım kaç denemede bileceksin?</p>
+                </div>
+                <a href="dokuzfenayilanoyunu.html" class="play-btn">Oyna</a>
+            </div>
+
+            <div class="game-card">
+                <div>
+                    <span class="category">Refleks</span>
+                    <h3>Tıkla ve Yakala</h3>
+                    <p>Ekranda beliren hedefleri kaçırmadan vurman gerekiyor. Hız her şeydir.</p>
+                </div>
+                <a href="#" class="play-btn">Oyna</a>
+            </div>
+
+            <div class="game-card">
+                <div>
+                    <span class="category">Arkad</span>
+                    <h3>Blok Kırıcı</h3>
+                    <p>Topun düşmesine izin verme ve bütün blokları temizle. Canın sıkılıyorsa birebir.</p>
+                </div>
+                <a href="#" class="play-btn">Oyna</a>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
