@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Yakala | Dokuz FEN A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --accent: #ffffff;
+            --target: #ffffff;
+            --miss: #ff3e3e;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: none; /* Mobilde kaydırmayı engeller */
+        }
+
+        header {
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1a1a1a;
+            z-index: 10;
+        }
+
+        .stats { display: flex; gap: 30px; }
+        .stat-label { font-size: 0.7rem; text-transform: uppercase; color: #666; display: block; }
+        .stat-value { font-family: 'Playfair Display', serif; font-size: 1.5rem; }
+
+        .back-btn { color: #666; text-decoration: none; font-size: 0.8rem; text-transform: uppercase; }
+
+        /* Oyun Alanı */
+        #game-area {
+            flex-grow: 1;
+            position: relative;
+            cursor: crosshair;
+            width: 100%;
+        }
+
+        /* Hedef Nesne */
+        .target {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: var(--target);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            transition: transform 0.1s;
+            animation: spawn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes spawn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .target::after {
+            content: '';
+            width: 80%;
+            height: 80%;
+            border: 1px solid black;
+            border-radius: 50%;
+        }
+
+        /* Başlangıç ve Bitiş Ekranı */
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+        }
+
+        #overlay h2 { font-family: 'Playfair Display', serif; font-size: 3rem; margin-bottom: 10px; }
+        #overlay p { color: #666; margin-bottom: 30px; max-width: 300px; }
+
+        .btn-start {
+            background: white;
+            color: black;
+            padding: 15px 40px;
+            border: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+
+        /* Puan Uçuş Efekti */
+        .hit-effect {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 0.6s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(-50px); opacity: 0; }
+        }
+
+        @media (max-width: 600px) {
+            .target { width: 50px; height: 50px; }
+            #overlay h2 { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="dokuzfenagames.html" class="back-btn">← Vazgeç</a>
+        <div class="stats">
+            <div><span class="stat-label">Puan</span><span id="score" class="stat-value">0</span></div>
+            <div><span class="stat-label">Süre</span><span id="timer" class="stat-value">30</span></div>
+        </div>
+    </header>
+
+    <main id="game-area">
+        <div id="overlay">
+            <h2 id="overlay-title">HAZIR MISIN?</h2>
+            <p id="overlay-desc">Ekranda beliren hedefleri süre bitmeden yakala. Her başarılı atış hız kazandırır.</p>
+            <button class="btn-start" onclick="startGame()">Oyunu Başlat</button>
+        </div>
+    </main>
+
+    <script>
+        const gameArea = document.getElementById('game-area');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const overlay = document.getElementById('overlay');
+        const titleEl = document.getElementById('overlay-title');
+        const descEl = document.getElementById('overlay-desc');
+
+        let score = 0;
+        let timeLeft = 30;
+        let gameActive = false;
+        let spawnInterval;
+        let countdownInterval;
+        let currentTargetSpeed = 1000;
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            gameActive = true;
+            currentTargetSpeed = 1000;
+            scoreEl.innerText = score;
+            timerEl.innerText = timeLeft;
+            overlay.style.display = 'none';
+
+            spawnTarget();
+            
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function spawnTarget() {
+            if (!gameActive) return;
+
+            // Önceki hedefi temizle
+            const oldTarget = document.querySelector('.target');
+            if (oldTarget) oldTarget.remove();
+
+            const target = document.createElement('div');
+            target.className = 'target';
+            
+            // Rastgele konum hesapla (kenarlardan 60px pay bırak)
+            const x = Math.random() * (gameArea.clientWidth - 80) + 10;
+            const y = Math.random() * (gameArea.clientHeight - 80) + 10;
+
+            target.style.left = x + 'px';
+            target.style.top = y + 'px';
+
+            // Tıklama / Dokunma olayı
+            const hitEvent = (e) => {
+                e.stopPropagation();
+                hitTarget(x, y);
+                target.remove();
+                clearTimeout(spawnInterval);
+                
+                // Zorluk artır (hızlandır)
+                currentTargetSpeed = Math.max(400, 1000 - (score * 15));
+                spawnTarget();
+            };
+
+            target.addEventListener('mousedown', hitEvent);
+            target.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                hitEvent(e);
+            });
+
+            gameArea.appendChild(target);
+
+            // Hedef belirli bir süre sonra kaçarsa
+            spawnInterval = setTimeout(() => {
+                if (gameActive) spawnTarget();
+            }, currentTargetSpeed);
+        }
+
+        function hitTarget(x, y) {
+            score += 10;
+            scoreEl.innerText = score;
+
+            // Görsel efekt
+            const effect = document.createElement('div');
+            effect.className = 'hit-effect';
+            effect.innerText = '+10';
+            effect.style.left = x + 'px';
+            effect.style.top = y + 'px';
+            gameArea.appendChild(effect);
+            setTimeout(() => effect.remove(), 600);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(countdownInterval);
+            clearTimeout(spawnInterval);
+            
+            const oldTarget = document.querySelector('.target');
+            if (oldTarget) oldTarget.remove();
+
+            titleEl.innerText = "OYUN BİTTİ";
+            descEl.innerText = `Skorun: ${score}. Fena değil, ama daha iyisini yapabilirsin.`;
+            overlay.style.display = 'flex';
+        }
+
+        // Boş yere tıklarsa süre cezası (Opsiyonel - istersen kaldırabilirsin)
+        gameArea.addEventListener('mousedown', () => {
+            if (gameActive) {
+                // Yanlış tıklama efekti yapılabilir
+            }
+        });
+    </script>
+</body>
+</html>
