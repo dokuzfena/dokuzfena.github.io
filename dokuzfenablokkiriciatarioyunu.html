@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Blok Kırıcı | Dokuz FEN A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --accent: #ffffff;
+            --brick: #ffffff;
+            --paddle: #ffffff;
+        }
+
+        body {
+            margin: 0; background: var(--bg); color: white;
+            font-family: 'Inter', sans-serif; display: flex; flex-direction: column;
+            align-items: center; height: 100vh; overflow: hidden; touch-action: none;
+        }
+
+        header {
+            width: 100%; padding: 20px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid #1a1a1a; max-width: 600px; box-sizing: border-box;
+        }
+
+        .stat-label { font-size: 0.7rem; text-transform: uppercase; color: #666; display: block; }
+        .stat-value { font-family: 'Playfair Display', serif; font-size: 1.2rem; }
+        .back-btn { color: #666; text-decoration: none; font-size: 0.8rem; text-transform: uppercase; }
+
+        #canvas-container {
+            flex-grow: 1; display: flex; align-items: center; justify-content: center;
+            width: 100%; position: relative;
+        }
+
+        canvas {
+            background: #0f0f0f; border-radius: 4px; box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            max-width: 95vw; max-height: 70vh; touch-action: none;
+        }
+
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10;
+        }
+
+        .btn-start {
+            background: white; color: black; padding: 15px 40px; border: none;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+        }
+
+        .hints { margin-top: 20px; color: #444; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="dokuzfenagames.html" class="back-btn">← Vazgeç</a>
+        <div><span class="stat-label">Skor</span><span id="score" class="stat-value">0</span></div>
+    </header>
+
+    <div id="canvas-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="overlay">
+            <h2 id="msg" style="font-family:'Playfair Display'; font-size: 2.5rem;">HAZIR?</h2>
+            <button class="btn-start" onclick="startGame()">Başlat</button>
+            <div class="hints">Sola/Sağa Kaydır veya Fareyi Hareket Ettir</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreEl = document.getElementById("score");
+        const overlay = document.getElementById("overlay");
+        const msgEl = document.getElementById("msg");
+
+        // Dinamik Boyutlandırma
+        canvas.width = 400;
+        canvas.height = 500;
+
+        let score = 0;
+        let gameActive = false;
+
+        // Top ve Palet Özellikleri
+        const ballRadius = 6;
+        let x, y, dx, dy;
+        const paddleHeight = 10;
+        const paddleWidth = 75;
+        let paddleX;
+
+        // Blok Ayarları
+        const brickRowCount = 5;
+        const brickColumnCount = 5;
+        const brickWidth = 65;
+        const brickHeight = 20;
+        const brickPadding = 10;
+        const brickOffsetTop = 30;
+        const brickOffsetLeft = 15;
+        let bricks = [];
+
+        function initBricks() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                bricks[c] = [];
+                for (let r = 0; r < brickRowCount; r++) {
+                    bricks[c][r] = { x: 0, y: 0, status: 1 };
+                }
+            }
+        }
+
+        // Fare Kontrolü
+        document.addEventListener("mousemove", (e) => {
+            const relativeX = e.clientX - canvas.offsetLeft;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddleX = relativeX - paddleWidth / 2;
+            }
+        });
+
+        // Dokunmatik Kontrol
+        canvas.addEventListener("touchmove", (e) => {
+            e.preventDefault();
+            const relativeX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddleX = (relativeX * (canvas.width / canvas.clientWidth)) - paddleWidth / 2;
+            }
+        }, {passive: false});
+
+        function startGame() {
+            score = 0;
+            scoreEl.innerText = score;
+            x = canvas.width / 2;
+            y = canvas.height - 30;
+            dx = 3;
+            dy = -3;
+            paddleX = (canvas.width - paddleWidth) / 2;
+            initBricks();
+            gameActive = true;
+            overlay.style.display = "none";
+            draw();
+        }
+
+        function collisionDetection() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    let b = bricks[c][r];
+                    if (b.status === 1) {
+                        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
+                            dy = -dy;
+                            b.status = 0;
+                            score++;
+                            scoreEl.innerText = score;
+                            if (score === brickRowCount * brickColumnCount) {
+                                msgEl.innerText = "KAZANDIN!";
+                                gameActive = false;
+                                setTimeout(() => overlay.style.display = "flex", 500);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle() {
+            ctx.beginPath();
+            ctx.roundRect(paddleX, canvas.height - paddleHeight - 10, paddleWidth, paddleHeight, 5);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawBricks() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    if (bricks[c][r].status === 1) {
+                        let brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft;
+                        let brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
+                        bricks[c][r].x = brickX;
+                        bricks[c][r].y = brickY;
+                        ctx.beginPath();
+                        ctx.roundRect(brickX, brickY, brickWidth, brickHeight, 3);
+                        ctx.fillStyle = r % 2 === 0 ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)";
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            if (!gameActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBricks();
+            drawBall();
+            drawPaddle();
+            collisionDetection();
+
+            // Kenar Çarpmaları
+            if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
+            if (y + dy < ballRadius) dy = -dy;
+            else if (y + dy > canvas.height - ballRadius - 10) {
+                if (x > paddleX && x < paddleX + paddleWidth) {
+                    dy = -dy;
+                    // Vuruş açısına göre topu yönlendir
+                    dx = 8 * ((x - (paddleX + paddleWidth / 2)) / paddleWidth);
+                } else {
+                    msgEl.innerText = "EYVAH!";
+                    gameActive = false;
+                    setTimeout(() => overlay.style.display = "flex", 500);
+                }
+            }
+
+            x += dx;
+            y += dy;
+            requestAnimationFrame(draw);
+        }
+    </script>
+</body>
+</html>
