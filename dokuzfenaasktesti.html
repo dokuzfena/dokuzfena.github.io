@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analiz | Dokuz FEN A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #050505; --accent: #ffffff; }
+        body { 
+            margin: 0; background: var(--bg); color: white; 
+            font-family: 'Inter', sans-serif; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            height: 100vh; overflow: hidden;
+        }
+
+        .container { text-align: center; width: 90%; max-width: 400px; z-index: 2; }
+        h1 { font-family: 'Playfair Display', serif; font-size: 2.5rem; margin-bottom: 30px; letter-spacing: -1px; }
+
+        .input-group { margin-bottom: 20px; }
+        input {
+            background: transparent; border: none; border-bottom: 1px solid #333;
+            color: white; padding: 10px; width: 100%; text-align: center;
+            font-size: 1.1rem; outline: none; transition: 0.3s; font-family: 'Inter', sans-serif;
+        }
+        input:focus { border-bottom-color: var(--accent); }
+
+        .analyze-btn {
+            background: white; color: black; border: none; padding: 15px 40px;
+            margin-top: 30px; cursor: pointer; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 2px; transition: 0.3s;
+        }
+        .analyze-btn:hover { transform: scale(1.05); }
+
+        #loader { display: none; margin-top: 30px; }
+        .spinner {
+            width: 40px; height: 40px; border: 2px solid #222;
+            border-top: 2px solid white; border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #result { 
+            display: none; margin-top: 40px; animation: fadeIn 1s; 
+        }
+        .score { font-family: 'Playfair Display', serif; font-size: 5rem; margin: 10px 0; }
+        .status { text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem; color: #888; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .back-link { position: absolute; top: 30px; left: 30px; color: #444; text-decoration: none; font-size: 0.7rem; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+    <a href="dokuzfenadigericerikler.html" class="back-link">← LABORATUVAR</a>
+
+    <div class="container" id="main-ui">
+        <h1>Uyumluluk Analizi</h1>
+        <div class="input-group">
+            <input type="text" id="name1" placeholder="BİRİNCİ İSİM" autocomplete="off">
+        </div>
+        <div class="input-group">
+            <input type="text" id="name2" placeholder="İKİNCİ İSİM" autocomplete="off">
+        </div>
+        <button class="analyze-btn" onclick="startAnalysis()">ANALİZ ET</button>
+    </div>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <p id="loading-text" style="font-size: 0.7rem; letter-spacing: 2px; color: #666;">VERİLER İŞLENİYOR...</p>
+    </div>
+
+    <div id="result">
+        <div class="status">UYUMLULUK ORANI</div>
+        <div class="score" id="final-score">0%</div>
+        <p id="comment" style="color: #666; font-style: italic;"></p>
+        <button class="analyze-btn" onclick="reset()" style="padding: 10px 20px; font-size: 0.7rem;">YENİ ANALİZ</button>
+    </div>
+
+    <script>
+        function startAnalysis() {
+            const n1 = document.getElementById('name1').value.trim();
+            const n2 = document.getElementById('name2').value.trim();
+
+            if (n1 === "" || n2 === "") {
+                alert("Lütfen iki isim de girin.");
+                return;
+            }
+
+            document.getElementById('main-ui').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+
+            const steps = ["NOMİNAL VERİLER OKUNUYOR...", "BİYOMETRİK EŞLEŞME YAPILIYOR...", "SONUÇLAR DERLENİYOR..."];
+            let step = 0;
+            const stepInterval = setInterval(() => {
+                document.getElementById('loading-text').innerText = steps[step];
+                step++;
+                if (step >= steps.length) {
+                    clearInterval(stepInterval);
+                    showResult(n1, n2);
+                }
+            }, 1000);
+        }
+
+        function showResult(n1, n2) {
+            // İsimlerden sabit bir sayı üret (Algoritma)
+            const combined = (n1 + n2).toLowerCase().replace(/\s/g, "");
+            let hash = 0;
+            for (let i = 0; i < combined.length; i++) {
+                hash += combined.charCodeAt(i);
+            }
+            const finalPercent = (hash % 101);
+
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('final-score').innerText = finalPercent + "%";
+
+            let comment = "";
+            if (finalPercent > 85) comment = "Mükemmel ötesi bir uyum.";
+            else if (finalPercent > 60) comment = "Potansiyel vaat eden bir etkileşim.";
+            else if (finalPercent > 30) comment = "Düşük frekanslı bağlantı.";
+            else comment = "Sanal bir hata; uyum tespit edilemedi.";
+            
+            document.getElementById('comment').innerText = comment;
+        }
+
+        function reset() {
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'block';
+            document.getElementById('name1').value = "";
+            document.getElementById('name2').value = "";
+        }
+    </script>
+</body>
+</html>
