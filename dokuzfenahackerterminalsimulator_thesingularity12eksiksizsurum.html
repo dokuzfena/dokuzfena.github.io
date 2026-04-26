@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>FEN-OS v12.0 | SINGULARITY</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --g: #00ff41; --bg: #010501; --w: #ffcc00; --e: #ff003c; --s: #00ccff; --d: #003300; }
+        * { box-sizing: border-box; outline: none; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: var(--g); font-family: 'Fira Code', monospace; height: 100vh; overflow: hidden; font-size: 13px; }
+        .crt { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255,0,0,0.02), rgba(0,255,0,0.01), rgba(0,0,255,0.02)); background-size: 100% 2px, 2px 100%; }
+        #os { display: flex; flex-direction: column; height: 100%; padding: 15px; position: relative; z-index: 10; }
+        .hud { display: flex; justify-content: space-between; font-size: 10px; color: var(--w); border-bottom: 1px solid var(--d); padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        #out { flex-grow: 1; overflow-y: auto; scrollbar-width: none; }
+        #out::-webkit-scrollbar { display: none; }
+        .in-line { display: flex; align-items: center; border-top: 1px solid var(--d); padding: 10px 0; margin-top: auto; }
+        #prompt { font-weight: bold; margin-right: 8px; color: var(--s); white-space: nowrap; }
+        #cmd { background: transparent; border: none; color: white; width: 100%; font-family: inherit; font-size: 16px; }
+        .ln { margin-bottom: 5px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+        .err { color: var(--e); font-weight: bold; } .sys { color: var(--s); } .warn { color: var(--w); }
+        .cat-title { color: var(--w); font-weight: bold; margin: 12px 0 4px 0; display: block; border-left: 3px solid var(--w); padding-left: 10px; }
+    </style>
+</head>
+<body onclick="document.getElementById('cmd').focus()">
+    <div class="crt"></div>
+    <div id="os">
+        <div class="hud"><span>[ SYSTEM_STATUS: ONLINE ] // CORE_V12.0</span><span id="clk">00:00:00</span></div>
+        <div id="out"></div>
+        <div class="in-line">
+            <span id="prompt">admin@9fena:~$</span>
+            <input type="text" id="cmd" autofocus spellcheck="false" autocomplete="off" autocapitalize="none">
+        </div>
+    </div>
+
+<script>
+    const out = document.getElementById('out');
+    const input = document.getElementById('cmd');
+    const clk = document.getElementById('clk');
+    let history = []; let hIdx = -1;
+
+    setInterval(() => { clk.innerText = new Date().toLocaleTimeString('tr-TR'); }, 1000);
+
+    function print(t, c = "") {
+        const d = document.createElement("div");
+        d.className = "ln " + c;
+        d.innerHTML = t;
+        out.appendChild(d);
+        out.scrollTop = out.scrollHeight;
+    }
+
+    const cmds = {
+        // --- SİSTEM ---
+        "help": () => `
+<span class="cat-title">SİSTEM</span> ls, cd, pwd, clear, whoami, history, reboot, exit, version, date, time, uname, uptime
+<span class="cat-title">SİBER</span> ping, hack, nmap, ifconfig, ip, netstat, firewall, wifi, trace, ddos, scan, mac, decrypt, encrypt, payload
+<span class="cat-title">DOSYA</span> cat, touch, mkdir, rm, tree, disk, logs, bios
+<span class="cat-title">ARAÇLAR</span> timer, calc, txt2hex, hex2txt, base64, md5, len, rev, bin, uuid, theme, font, clock
+<span class="cat-title">DONANIM</span> neofetch, sysinfo, battery, hardware, screen, cpu, ram
+<span class="cat-title">9-FEN-A</span> matrix, fortune, joke, cowsay, 8ball, roll, flip, rickroll, class, manifesto, rules, secret, beep, anthem`,
+
+        "ls": () => "bin/  etc/  home/  root/  README.md  manifesto.txt  secrets.db",
+        "cd": (a) => `Dizin değiştirildi: /${a[0] || 'root'}`,
+        "pwd": () => "/home/admin",
+        "clear": () => { out.innerHTML = ""; return ""; },
+        "whoami": "Kullanıcı: admin | Yetki: OMEGA-PREMIUM",
+        "history": () => history.length ? history.join("\n") : "Geçmiş temiz.",
+        "reboot": () => { location.reload(); return "Sistem tazeleniyor..."; },
+        "exit": "Çıkış protokolü reddedildi. Sistemden kaçamazsın.",
+        "version": "FEN-OS v12.0.0 (Singularity Build)",
+        "date": () => new Date().toLocaleDateString('tr-TR'),
+        "time": () => new Date().toLocaleTimeString('tr-TR'),
+        "uname": "Linux FEN-OS 2026-X86_64",
+        "uptime": () => `${Math.floor(performance.now()/1000)} saniyedir kesintisiz hizmet.`,
+
+        // --- SİBER ---
+        "ping": (a) => `Pinging ${a[0] || '9fena.org'}... Reply from 10.9.0.1: time=7ms`,
+        "hack": (a) => `<span class='err'>[!] ${a[0] || 'Hedef'} sistemde açık bulundu. Root erişimi sağlandı.</span>`,
+        "nmap": "Port 80: OPEN\nPort 443: OPEN\nPort 22: OPEN (SSH)",
+        "ifconfig": "inet 192.168.1.105 | netmask 255.255.255.0",
+        "ip": "Local: 192.168.1.105 | WAN: 176.234.XX.XX",
+        "netstat": "ESTABLISHED: 10.9.A.1 -> 8.8.8.8",
+        "firewall": "Durum: AKTİF. Dokuz FEN A koruması altında.",
+        "wifi": "1. Dokuz_Fen_A_5G (%100)\n2. Misafir_Agi (%20)",
+        "trace": (a) => `Hop 1: 192.168.1.1\nHop 2: 10.0.0.1\nHop 3: ${a[0] || '8.8.8.8'}`,
+        "ddos": (a) => `Paketler ${a[0] || 'target'} adresine gönderiliyor...`,
+        "scan": "Sistem tarandı. 0 virüs, 1 admin (sen) bulundu.",
+        "mac": "00:1A:2B:3C:4D:5E",
+        "decrypt": "Hash çözülüyor... Tamamlandı: 'FEN-A-LİDER'",
+        "encrypt": (a) => btoa(a.join(" ")),
+        "payload": "Payload-v12 enjeksiyon için hazır.",
+
+        // --- DOSYA ---
+        "cat": (a) => a[0] === "manifesto.txt" ? "Bilgi hür olmalı, zihin kodla beslenmeli." : "İçerik: [GİZLİ VERİ]",
+        "touch": (a) => `Oluşturuldu: ${a[0] || 'file.txt'}`,
+        "mkdir": (a) => `Dizin: ${a[0] || 'new_dir'}`,
+        "rm": (a) => `Silindi: ${a[0] || 'dosya'}`,
+        "tree": ".\n├── root\n├── bin\n└── home\n    └── admin",
+        "disk": "Total: 1TB | Free: 850GB",
+        "logs": "19:00 - User login\n19:15 - Command execution",
+        "bios": "SINGULARITY BIOS v4.0",
+
+        // --- ARAÇLAR ---
+        "timer": async (a) => {
+            let s = parseInt(a[0]); if(isNaN(s)) return "Örn: timer 10";
+            print(`Zamanlayıcı: ${s}s`, "warn");
+            for(let i=s; i>0; i--) { await new Promise(r => setTimeout(r, 1000)); print(`Kalan: ${i-1}`); }
+            return "SÜRE DOLDU!";
+        },
+        "calc": (a) => { try { return "Sonuç: " + eval(a.join("")); } catch { return "Hata!"; } },
+        "txt2hex": (a) => a.join(" ").split("").map(c => c.charCodeAt(0).toString(16)).join(""),
+        "hex2txt": (a) => {
+            try { let h = a[0]; let s = ""; for(let i=0; i<h.length; i+=2) s += String.fromCharCode(parseInt(h.substr(i,2),16)); return "Metin: " + s; }
+            catch { return "Hata!"; }
+        },
+        "base64": (a) => btoa(a.join(" ")),
+        "md5": (a) => "Hash: " + Math.random().toString(36).substring(2, 15),
+        "len": (a) => `Uzunluk: ${a.join(" ").length}`,
+        "rev": (a) => a.join(" ").split("").reverse().join(""),
+        "bin": (a) => a.join("").split("").map(c => c.charCodeAt(0).toString(2)).join(" "),
+        "uuid": () => crypto.randomUUID(),
+        "theme": (a) => { document.body.style.color = a[0] || "green"; return "Tema değişti."; },
+        "font": "Fira Code, Retina Display Support",
+        "clock": () => new Date().toLocaleTimeString(),
+
+        // --- DONANIM ---
+        "neofetch": "OS: FEN-OS 12.0\nKernel: 9FA-Core\nShell: fensh\nUptime: Stable",
+        "sysinfo": "Platform: " + navigator.platform,
+        "battery": "Pil: %100",
+        "hardware": "CPU: 16 Core 5.5GHz\nRAM: 64GB DDR5\nSSD: NVMe Gen5",
+        "screen": () => `${window.innerWidth}x${window.innerHeight} @ 120Hz`,
+        "cpu": "FEN-Processor v9 Platinum",
+        "ram": "64GB (32GB kullanılabilir)",
+
+        // --- 9-FEN-A ---
+        "matrix": () => { document.body.style.color = "#00ff41"; return "Wake up, Neo..."; },
+        "fortune": () => "Bugün harika bir kod yazacaksın.",
+        "joke": () => "Neden Python geliştiricileri gözlük takar? Çünkü C#'ı göremezler.",
+        "cowsay": (a) => ` < ${a.join(" ") || 'Möö'} >\n  \\   ^__^\n   \\  (oo)\\_______\n      (__)\\       )\\/\\\n          ||----w |\n          ||     ||`,
+        "8ball": () => ["Evet", "Hayır", "Belki", "Şüphesiz"].sort(()=>Math.random()-0.5)[0],
+        "roll": () => "Zar: " + (Math.floor(Math.random()*6)+1),
+        "flip": () => Math.random() > 0.5 ? "YAZI" : "TURA",
+        "rickroll": () => { window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ"); return "Never gonna let you down."; },
+        "class": "Dokuz FEN A: Zirvenin tek sahibi.",
+        "manifesto": "Büyük beyinler, büyük kodlar yazar.",
+        "rules": "1. Admin her zaman haklıdır.\n2. Hata yaparsan 1. kuralı oku.",
+        "secret": "KEY: 9FA-2026-X",
+        "beep": () => { let ac = new AudioContext(); let o = ac.createOscillator(); o.connect(ac.destination); o.start(); o.stop(ac.currentTime+0.1); return "Bip!"; },
+        "anthem": "Kodlar bizim marşımız, ekranlar bizim vatanımız!"
+    };
+
+    input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            const val = input.value.trim(); if (!val) return;
+            print(`admin@9fena:~$ ${val}`, "warn");
+            history.push(val); hIdx = history.length;
+            const pts = val.split(" "); const c = pts[0].toLowerCase(); const args = pts.slice(1);
+            if (cmds[c]) {
+                const res = typeof cmds[c] === 'function' ? await cmds[c](args) : cmds[c];
+                if (res) print(res);
+            } else { print(`Hata: '${c}' komutu sistemde tanımlı değil. 'help' yazın.`, "err"); }
+            input.value = ""; out.scrollTop = out.scrollHeight;
+        } else if (e.key === 'ArrowUp') { 
+            if(hIdx > 0) { hIdx--; input.value = history[hIdx]; }
+            e.preventDefault();
+        } else if (e.key === 'ArrowDown') {
+            if(hIdx < history.length - 1) { hIdx++; input.value = history[hIdx]; }
+            else { hIdx = history.length; input.value = ""; }
+            e.preventDefault();
+        }
+    });
+
+    print("FEN-OS v12.0 [SINGULARITY_CORE] AKTİF.", "sys");
+    print("Videonuzdaki tüm komutlar (8ball, flip, manifesto vb.) düzeltildi.\n", "warn");
+</script>
+</body>
+</html>
