@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stres Kutusu</title>
+    <style>
+        body { margin: 0; background: #000; height: 100vh; overflow: hidden; cursor: pointer; }
+        .box { position: absolute; border: 1px solid white; pointer-events: none; transition: 0.5s; }
+    </style>
+</head>
+<body onclick="createBox(event)">
+    <div style="position:fixed; top:20px; left:20px; color:#333; font-size: 0.7rem; pointer-events: none;">EKRANA DOKUN VE DOLDUR</div>
+    <script>
+        function createBox(e) {
+            const box = document.createElement('div');
+            const size = Math.random() * 100 + 50;
+            box.className = 'box';
+            box.style.width = size + 'px';
+            box.style.height = size + 'px';
+            box.style.left = (e.clientX - size/2) + 'px';
+            box.style.top = (e.clientY - size/2) + 'px';
+            box.style.transform = `rotate(${Math.random() * 360}deg)`;
+            document.body.appendChild(box);
+            
+            setTimeout(() => {
+                box.style.opacity = '0';
+                setTimeout(() => box.remove(), 500);
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
