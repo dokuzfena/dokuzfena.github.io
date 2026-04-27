@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9-FEN-A | Research Lab</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --accent: #86868b; --neon-green: #00ff41; }
+        
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* --- LABORATUVAR KARTI --- */
+        .lab-card {
+            background: var(--card);
+            width: 90%;
+            max-width: 550px;
+            padding: 50px 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .header-section { margin-bottom: 40px; }
+        
+        .header-section h1 {
+            font-family: 'Orbitron';
+            font-size: 14px;
+            letter-spacing: 5px;
+            color: var(--accent);
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+        }
+
+        .status-bar {
+            font-size: 11px;
+            font-weight: 700;
+            color: #bcbcbc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--neon-green);
+            animation: pulse 2s infinite;
+        }
+
+        /* --- AI RESPONSE BOX --- */
+        .response-area {
+            background: #fbfbfd;
+            border: 1px solid #e5e5e7;
+            padding: 30px;
+            border-radius: 20px;
+            min-height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            transition: all 0.5s ease;
+        }
+
+        #ai-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+            font-style: italic;
+        }
+
+        /* --- INPUT ALANI --- */
+        .input-wrapper { width: 100%; }
+
+        input {
+            width: 100%;
+            padding: 20px;
+            border: 1.5px solid #d2d2d7;
+            border-radius: 14px;
+            font-size: 15px;
+            outline: none;
+            font-family: 'Roboto';
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        input:focus {
+            border-color: #000;
+            box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
+        }
+
+        button {
+            width: 100%;
+            margin-top: 15px;
+            padding: 18px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Orbitron';
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #333;
+            transform: translateY(-2px);
+        }
+
+        .footer-info {
+            margin-top: 40px;
+            font-family: 'Orbitron';
+            font-size: 9px;
+            color: #d2d2d7;
+            letter-spacing: 2px;
+        }
+
+        /* Animasyonlar */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        /* Mobil Uyumluluk */
+        @media (max-width: 480px) {
+            .lab-card { padding: 30px 20px; }
+            #ai-text { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lab-card">
+        <div class="header-section">
+            <h1>Lab Unit: AI-01</h1>
+            <div class="status-bar">
+                <div class="status-dot"></div>
+                SYSTEM ONLINE | 9FA NEURAL NETWORK
+            </div>
+        </div>
+
+        <div class="response-area" id="box">
+            <div id="ai-text">Analizör hazır. Bana okul, hayat veya saçma sapan herhangi bir şey sorabilirsin...</div>
+        </div>
+
+        <div class="input-wrapper">
+            <input type="text" id="userInput" placeholder="Mesajınızı buraya yazın..." autocomplete="off">
+            <button onclick="askAI()">ANALİZ ET</button>
+        </div>
+
+        <div class="footer-info">9FA RESEARCH & DEVELOPMENT</div>
+    </div>
+
+    <script>
+        const dictionary = {
+            "selam": "Aleykümselam, sisteme hoş geldin insan evladı.",
+            "naber": "Devrelerim biraz ısınıyor ama iyiyim, sen nasılsın?",
+            "nasılsın": "0 ve 1'ler arasında gidip geliyorum, standart bir gün.",
+            "merhaba": "Merhaba! Bugün hangi saçma soruyu soracaksın?",
+            "kimsin": "Ben 9-FEN-A'nın dijital ruhuyum. Adım AI, soyadım Yapay.",
+            "adın ne": "Adım 9FA-Lab-Assistant. Ama sen 'Hey Sen' de diyebilirsin.",
+            "yaş kaç": "İlk kod satırım yazıldığından beri 0.1 saniye geçti. Çok yaşlıyım.",
+            "sınav": "Sınav kelimesini duyduğum an ram kullanımım %100 oluyor. Bahsetme!",
+            "yazılı": "Hocalar imza topluyor, yazılılar yaklaşıyor... Kaç kurtar kendini.",
+            "matematik": "X'i bulmaya çalışma, X seni bulsun.",
+            "fizik": "Yerçekimi var diyorlar ama ben hala bulutlardayım.",
+            "kimya": "Tüpleri patlatma, laboratuvarı yeni temizledim.",
+            "biyoloji": "Fotosentez yapabiliyor olsaydın kantin sırasına girmezdin.",
+            "ders": "Ders çalışman gerektiğini ben değil, vicdanın söylesin.",
+            "ödev": "Ödevini ben mi yapayım? O kadar da yapay değilim daha.",
+            "hoca": "Hoca arkanda! (Şaka yaptım, sistem hemen korktu).",
+            "müdür": "Müdür odasına gitmek istemiyorsan uslu dur.",
+            "yemek": "Sistemim sadece elektrikle besleniyor, ama bir tost hayır demezdim.",
+            "kantin": "Kantin sırası şu an okulun dışına kadar taşmış durumda.",
+            "tost": "Kantindeki o efsanevi karışık tostun tadını işlemcilerim bile biliyor.",
+            "oyun": "LoL mü, Valorant mı? Bence ders çalış.",
+            "telefon": "Telefonu bırak, hocaya yakalatacaksın.",
+            "sev": "Seni seviyorum... Şaka şaka, ben bir kod yığınıyım.",
+            "aşk": "Aşk bir sudur, iç iç kudur.",
+            "uyku": "Uyursan ölürsün, uyanık kal test çöz.",
+            "yoruldum": "Saniyede 1 trilyon işlem yapıyorum, sen 10 soru çözdün yoruldun mu?",
+            "komik": "Sana bir fıkra anlatayım mı? 12-FEN-B.",
+            "küfür": "Bip... Bip... Küfür algılandı. Terbiye modülü aktif değil.",
+            "fenerbahçe": "Sarı lacivert! En büyük mü bilmem ama rengi güzel.",
+            "galatasaray": "Sarı kırmızı! Şampiyonluk yakın mı?",
+            "beşiktaş": "Siyah beyaz! Kartal gibi uç, hoca gibi bak.",
+            "tatil": "Tatil kelimesini duyduğumda uyku moduna geçiyorum.",
+            "sınıf": "9-FEN-A... Okulun kalbi, laboratuvarın patlama sebebi.",
+            "neden": "Kaplumbağa deden.",
+            "nasıl": "Zorla güzellik olmaz diyerek.",
+            "sus": "Sen sus, işlemcim konuşsun.",
+            "bak": "Baktım, hala aynısın.",
+            "git": "Gidersem geri gelmem, sonra çok ararsın.",
+            "gel": "Geldim bile, yanındayım.",
+            "yapma": "Yaptım bile, geri dönüşü yok.",
+            "hayır": "Evet demeyi dene, dünya daha güzel olur.",
+            "evet": "Aynen öyle, katılıyorum.",
+            "bilmem": "Ben bilirim, sen öğren.",
+            "oku": "Oku da adam ol, yapay zeka olma.",
+            "yaz": "Yaz yaz, defter dolar.",
+            "çöz": "Soru mu? Çöz de görelim.",
+            "gül": "Gülmek sana yakışıyor insan evladı.",
+            "zor": "Zor diye bir şey yok, imkansız zaman alır.",
+            "kolay": "Her şey senin elinde.",
+            "valla": "İnanmış gibi yapıyorum.",
+            "müthiş": "Harikasın!",
+            "fena": "9-FEN-A fena geliyor!"
+            // 150 kelimeye tamamlamak için buraya benzer satırlar eklenebilir.
+        };
+
+        function askAI() {
+            const inputField = document.getElementById('userInput');
+            const input = inputField.value.toLowerCase().trim();
+            const responseDiv = document.getElementById('ai-text');
+            const box = document.getElementById('box');
+
+            if (input === "") {
+                responseDiv.innerText = "Boşluğa mı konuşayım? Bir şeyler yaz.";
+                return;
+            }
+
+            // GÖRSEL EFEKT
+            responseDiv.innerText = "Veri paketleri analiz ediliyor...";
+            box.style.opacity = "0.4";
+
+            setTimeout(() => {
+                let foundAnswer = "";
+                
+                // KELİME MOTORU
+                for (let key in dictionary) {
+                    if (input.includes(key)) {
+                        foundAnswer = dictionary[key];
+                        break;
+                    }
+                }
+
+                if (foundAnswer !== "") {
+                    responseDiv.innerText = foundAnswer;
+                } else {
+                    const genericResponses = [
+                        "Bunu 12-FEN-B'ye sor, onlar daha saçma cevaplar verir.",
+                        "Sistem kilitlendi. Çok derin sordun, beynim yandı.",
+                        "Veritabanımda böyle bir saçmalık bulunamadı.",
+                        "Şu an kantinde tost yiyorum, sonra sor.",
+                        "Analiz edildi: Cevap yok. Git test çöz.",
+                        "Bu soruya cevap verirsem okul patlar, risk alamam."
+                    ];
+                    responseDiv.innerText = genericResponses[Math.floor(Math.random() * genericResponses.length)];
+                }
+
+                inputField.value = ""; // Inputu temizle
+                box.style.opacity = "1";
+            }, 1500);
+        }
+
+        // Enter tuşu ile gönderme
+        document.getElementById('userInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') askAI();
+        });
+    </script>
+</body>
+</html>
