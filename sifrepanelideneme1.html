@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9-FEN-A | Secure Access</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root { --neon: #00ff41; --bg: #050505; }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* --- ARKA PLAN EFEKTİ --- */
+        .matrix-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), 
+                        url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            z-index: -1;
+        }
+
+        /* --- GİRİŞ PANELİ --- */
+        .login-card {
+            width: 90%;
+            max-width: 400px;
+            background: rgba(15, 15, 15, 0.95);
+            padding: 40px 30px;
+            border-radius: 20px;
+            border: 1px solid var(--neon);
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-family: 'Orbitron';
+            color: var(--neon);
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px var(--neon);
+        }
+
+        .status-text {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: var(--neon);
+            font-size: 18px;
+            text-align: center;
+            font-family: 'Orbitron';
+            outline: none;
+            transition: 0.3s;
+            margin-bottom: 20px;
+        }
+
+        input:focus {
+            border-color: var(--neon);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: var(--neon);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Orbitron';
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 65, 0.4);
+        }
+
+        .error-msg {
+            color: #ff003c;
+            font-size: 12px;
+            margin-top: 15px;
+            display: none;
+            font-family: 'Orbitron';
+        }
+
+        /* Mobil Duyarlılık */
+        @media (max-width: 480px) {
+            .login-card { padding: 30px 20px; }
+            h1 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="matrix-bg"></div>
+
+    <div class="login-card">
+        <div class="status-text">9FA Terminal Access</div>
+        <h1>YETKİLİ GİRİŞİ</h1>
+        
+        <input type="password" id="passInput" placeholder="ERİŞİM KODU" autocomplete="off">
+        <button onclick="checkAuth()">SİSTEME BAĞLAN</button>
+        
+        <div id="error" class="error-msg">ERİŞİM REDDEDİLDİ!</div>
+    </div>
+
+    <script>
+        // ŞİFRE BELİRLEME (Buradan değiştirebilirsin)
+        const MASTER_PASSWORD = "1989_9fena";
+
+        function checkAuth() {
+            const input = document.getElementById('passInput').value;
+            const error = document.getElementById('error');
+
+            if (input === MASTER_PASSWORD) {
+                // Şifre doğruysa ana kimlik sayfasına yönlendir
+                // Not: Ana dosyanın adını 'kimlikkartideneme10_kararlisurum.html' olarak varsaydım
+                window.location.href = "kimlikkartideneme10kararlisurum.html"; 
+            } else {
+                error.style.display = "block";
+                document.getElementById('passInput').value = "";
+                // Hata mesajını sallantı efekti gibi düşün
+                error.style.animation = "shake 0.5s";
+                setTimeout(() => { error.style.animation = ""; }, 500);
+            }
+        }
+
+        // Enter tuşu ile giriş yapma desteği
+        document.getElementById('passInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkAuth();
+            }
+        });
+    </script>
+
+    <style>
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(5px); }
+            50% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</body>
+</html>

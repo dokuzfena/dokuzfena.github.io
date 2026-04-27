@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9-FEN-A ID System Pro v14.5</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --neon: #00ff41; --bg: #050505; }
+        * { box-sizing: border-box; }
+        body { background: var(--bg); color: white; font-family: 'Roboto', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+
+        .controls { width: 100%; max-width: 420px; background: #111; padding: 25px; border-radius: 15px; border: 1px solid #333; margin-bottom: 30px; }
+        h1 { font-family: 'Orbitron'; font-size: 1.4rem; color: var(--neon); text-align: center; margin-top: 0; }
+        label { font-size: 11px; color: #888; text-transform: uppercase; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #000; border: 1px solid #444; color: white; border-radius: 6px; outline: none; }
+        textarea { height: 60px; resize: none; }
+        .btn-group { display: flex; gap: 10px; }
+        button { flex: 1; padding: 14px; background: var(--neon); border: none; font-weight: bold; cursor: pointer; border-radius: 6px; font-family: 'Orbitron'; font-size: 11px; }
+        button.pdf { background: #ff003c; color: white; }
+
+        /* KİMLİK KARTI - DOKUNULMADI */
+        #id-card-wrap { padding: 0; display: inline-block; } /* PDF için boşluklar sıfırlandı */
+        .id-card {
+            width: 400px; height: 240px;
+            background: linear-gradient(135deg, #151515 0%, #050505 100%);
+            border-radius: 14px; position: relative; overflow: hidden;
+            padding: 20px; border: 1px solid rgba(0, 255, 65, 0.3);
+            box-shadow: 0 0 40px rgba(0,0,0,1);
+            display: flex; flex-direction: column;
+        }
+
+        .card-header { border-bottom: 2px solid var(--neon); padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .header-title { font-family: 'Orbitron'; font-size: 11px; color: var(--neon); font-weight: bold; }
+        
+        .card-content { display: flex; gap: 20px; align-items: flex-start; }
+        .photo-container { width: 100px; height: 125px; border: 1px solid #333; background: #000; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+        #p-img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .info-fields { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; }
+        .field-label { font-size: 7.5px; color: #666; text-transform: uppercase; margin-bottom: 2px; }
+        .field-value { font-size: 12px; font-weight: 700; color: #fff; text-transform: uppercase; line-height: 1.2; }
+        .id-number { font-family: 'Orbitron'; font-size: 10px; color: var(--neon); }
+
+        #qr-wrap { 
+            position: absolute;
+            bottom: 30px; 
+            right: 20px;
+            background: #fff; 
+            padding: 4px; 
+            border-radius: 6px; 
+            width: 65px; 
+            height: 65px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        #qr-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .footer-text { position: absolute; bottom: 15px; left: 20px; font-family: 'Orbitron'; font-size: 8px; color: #333; }
+
+        .hologram-strip {
+            position: absolute; right: 80px; top: -50px; width: 45px; height: 400px;
+            background: linear-gradient(90deg, transparent, rgba(0,255,65,0.05) 50%, transparent);
+            transform: rotate(25deg); pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <h1>ID GENERATOR PRO v14.5</h1>
+        <label>İSİM / KOD ADI</label>
+        <input type="text" id="inName" placeholder="İsim Yazın..." maxlength="25">
+        
+        <label>RÜTBE</label>
+        <select id="inRank">
+            <option value="ANA SİSTEM GELİŞTİRİCİSİ">Ana Sistem Geliştiricisi</option>
+            <option value="SİBER GÜVENLİK">Siber Güvenlik</option>
+            <option value="GELİŞTİRİCİ">Geliştirici</option>
+            <option value="DOKUZ FEN A ÜYESİ">Dokuz Fen A Üyesi</option>
+        </select>
+
+        <label>QR ÖZEL MESAJ</label>
+        <textarea id="inQR" placeholder="QR okutulunca çıkacak özel not..."></textarea>
+        
+        <label>FOTOĞRAF</label>
+        <input type="file" id="inImg" accept="image/*">
+        
+        <div class="btn-group">
+            <button onclick="generate()">KARTI OLUŞTUR</button>
+            <button class="pdf" onclick="saveAsPDF()">PDF İNDİR</button>
+        </div>
+    </div>
+
+    <div id="id-card-wrap">
+        <div class="id-card" id="card">
+            <div class="hologram-strip"></div>
+            <div class="card-header">
+                <div class="header-title">DOKUZ FEN A CUMHURİYETİ</div>
+                <div style="font-size: 8px; color: #444; font-weight:bold;">RESMİ KİMLİK KARTI</div>
+            </div>
+            <div class="card-content">
+                <div class="photo-container">
+                    <img id="p-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAAB5CAYAAAD99+3UAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABMSURBVHgB7cEBDQAAAMKg909tDwcUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4GZlAAAbv87m4AAAAASUVORK5CYII=">
+                </div>
+                <div class="info-fields">
+                    <div class="field">
+                        <div class="field-label">AD / ALIAS</div>
+                        <div class="field-value" id="resName">--- ACCESS DENIED ---</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">RÜTBE</div>
+                        <div class="field-value" id="resRank" style="color: var(--neon);">--- UNDEFINED ---</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">ID NO</div>
+                        <div class="field-value id-number" id="resID">#000000000</div>
+                    </div>
+                </div>
+            </div>
+            <div id="qr-wrap"><img id="qr-img" src="" style="display:none;"></div>
+            <div class="footer-text">SECURED BY 9FA-SYSTEMS</div>
+        </div>
+    </div>
+
+    <script>
+        function createID() { return "9FA" + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0'); }
+        window.onload = () => { document.getElementById('resID').innerText = createID(); };
+
+        function updateQR(text) {
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}&ecc=M&margin=2`;
+            const qrImg = document.getElementById('qr-img');
+            qrImg.src = qrUrl;
+            qrImg.style.display = 'block';
+        }
+
+        document.getElementById('inImg').onchange = function(e) {
+            const reader = new FileReader();
+            reader.onload = function() { document.getElementById('p-img').src = reader.result; };
+            if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+        };
+
+        function generate() {
+            const name = document.getElementById('inName').value.trim();
+            const rank = document.getElementById('inRank').value;
+            const customMsg = document.getElementById('inQR').value.trim();
+            const idNo = document.getElementById('resID').innerText;
+
+            if(!name) { alert("Sistem erişimi için bir isim girilmelidir!"); return; }
+
+            document.getElementById('resName').innerText = name.toUpperCase();
+            document.getElementById('resRank').innerText = rank;
+            
+            let qrFinalContent = "";
+            if(customMsg) { qrFinalContent += `MESAJ: ${customMsg}\n------------------\n`; }
+            qrFinalContent += `AD: ${name.toUpperCase()}\nRÜTBE: ${rank}\nKİMLİK NO: ${idNo}\nSİSTEM: 9FA-CORE`;
+            
+            updateQR(qrFinalContent);
+        }
+
+        /* --- SADECE BU FONKSİYON GÜNCELLENDİ --- */
+        function saveAsPDF() {
+            const element = document.getElementById('card'); // sarmalayıcı yerine direkt kartı alıyoruz
+            const name = document.getElementById('resName').innerText;
+            if(name.includes('---')) return;
+            
+            const opt = {
+                margin: 0,
+                filename: `9fa_id_${name.toLowerCase()}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { 
+                    scale: 4, 
+                    useCORS: true, 
+                    backgroundColor: '#050505',
+                    scrollY: 0 // Sayfa kaydırılmışsa oluşabilecek kaymayı önler
+                },
+                jsPDF: { unit: 'mm', format: [106, 64], orientation: 'landscape' } // Kart boyutuna (ID-1 standardına yakın) tam uyum
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+</html>
