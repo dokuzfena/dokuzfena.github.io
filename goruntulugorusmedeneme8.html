@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MeetFlow Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; height: 100vh; width: 100vw; overflow: hidden; color: white; }
+        
+        /* Video Katmanları */
+        #remote-video { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 10; background: #111; }
+        #local-video-container { 
+            position: absolute; top: 2rem; right: 1rem; width: 100px; height: 150px; 
+            z-index: 30; border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); background: #222;
+        }
+        #local-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+
+        /* Arayüz Elemanları */
+        .ui-overlay { position: absolute; inset: 0; z-index: 40; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 2rem 1rem; }
+        .pointer-events-auto { pointer-events: auto; }
+        .glass { background: rgba(0,0,0,0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+        
+        #chat-panel { 
+            position: fixed; bottom: 0; left: 0; right: 0; height: 60vh; 
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+            z-index: 50; border-radius: 2rem 2rem 0 0;
+        }
+        #chat-panel.open { transform: translateY(0); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="lobby" class="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center p-6 text-center">
+        <h1 class="text-4xl font-bold tracking-tighter mb-12">MeetFlow</h1>
+        <div class="w-full max-w-xs space-y-6">
+            <div class="p-6 rounded-3xl bg-neutral-900 border border-neutral-800">
+                <p class="text-xs text-neutral-500 uppercase tracking-widest mb-2">Senin Numaran</p>
+                <div id="my-id" class="text-3xl font-mono text-blue-500 font-bold tracking-tighter italic">Bağlanıyor...</div>
+            </div>
+            <input type="tel" id="remote-id" placeholder="Aranacak Numara" 
+                class="w-full bg-neutral-900 border-none rounded-2xl p-5 text-center text-2xl font-mono focus:ring-2 ring-blue-600 outline-none">
+            <button id="call-btn" class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-green-500/20 active:scale-90 transition">
+                <svg width="32" height="32" fill="white" viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="call-screen" class="hidden relative h-full w-full">
+        <video id="remote-video" autoplay playsinline></video>
+        
+        <div id="local-video-container">
+            <video id="local-video" autoplay muted playsinline></video>
+        </div>
+
+        <div class="ui-overlay">
+            <div id="status-text" class="self-center glass px-4 py-1 rounded-full text-xs font-medium tracking-widest uppercase text-white/70">Bağlantı Kuruluyor...</div>
+
+            <div class="flex justify-center items-center gap-4 pointer-events-auto pb-10">
+                <button id="toggle-mic" class="w-14 h-14 rounded-full glass flex items-center justify-center"><svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/></svg></button>
+                <button id="toggle-video" class="w-14 h-14 rounded-full glass flex items-center justify-center"><svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z"/></svg></button>
+                <button id="toggle-chat" class="w-14 h-14 rounded-full glass flex items-center justify-center"><svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H5.17L4,17.17V4H20V16Z"/></svg></button>
+                <button id="hangup-btn" class="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/30"><svg width="32" height="32" fill="white" viewBox="0 0 24 24"><path d="M12,9C10.4,9 8.85,9.25 7.4,9.72V12.82C7.4,13.22 7.17,13.56 6.84,13.72C5.86,14.21 4.97,14.84 4.17,15.57C4,15.75 3.75,15.86 3.5,15.86C3.2,15.86 2.95,15.74 2.77,15.56L0.29,13.08C0.11,12.9 0,12.65 0,12.38C0,12.1 0.11,11.85 0.29,11.67C3.38,8.77 7.48,7 12,7C16.52,7 20.62,8.77 23.71,11.67C23.89,11.85 24,12.1 24,12.38C24,12.65 23.89,12.9 23.71,13.08L21.23,15.56C21.05,15.74 20.8,15.86 20.5,15.86C20.25,15.86 20,15.75 19.82,15.57C19.03,14.84 18.14,14.21 17.16,13.72C16.83,13.56 16.6,13.22 16.6,12.82V9.72C15.15,9.25 13.6,9 12,9Z"/></svg></button>
+            </div>
+        </div>
+
+        <div id="chat-panel" class="glass-dark p-6 flex flex-col shadow-2xl pointer-events-auto">
+            <div class="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6" id="close-chat"></div>
+            <div id="chat-messages" class="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 text-sm"></div>
+            <div class="flex gap-2 pb-6">
+                <input type="text" id="chat-input" placeholder="Mesaj yaz..." class="flex-1 bg-white/10 rounded-2xl px-5 py-4 outline-none border border-white/5">
+                <button id="send-btn" class="bg-blue-600 px-6 rounded-2xl">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const myUniqueId = "5" + Math.floor(100000000 + Math.random() * 900000000).toString();
+        
+        // ÖNEMLİ: Aynı ağda (Wi-Fi) çalışmama sorunu için Google STUN sunucuları eklendi
+        const peer = new Peer(myUniqueId, {
+            config: {
+                'iceServers': [
+                    { url: 'stun:stun.l.google.com:19302' },
+                    { url: 'stun:stun1.l.google.com:19302' },
+                ]
+            }
+        });
+
+        let localStream, currentCall, currentConn;
+        let isMic = true, isVid = true;
+
+        async function startApp() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user", width: 1280, height: 720 }, 
+                    audio: true 
+                });
+                document.getElementById('local-video').srcObject = localStream;
+            } catch (e) { alert("Kamera izni gerekli!"); }
+        }
+
+        peer.on('open', id => document.getElementById('my-id').innerText = id);
+
+        peer.on('call', call => {
+            if(confirm("Gelen Arama!")) {
+                currentCall = call;
+                call.answer(localStream);
+                showCallScreen();
+                call.on('stream', s => document.getElementById('remote-video').srcObject = s);
+            }
+        });
+
+        peer.on('connection', conn => {
+            currentConn = conn;
+            conn.on('data', d => appendMsg(d, 'remote'));
+        });
+
+        document.getElementById('call-btn').onclick = () => {
+            const id = document.getElementById('remote-id').value;
+            if(id.length !== 10) return;
+            showCallScreen();
+            currentCall = peer.call(id, localStream);
+            currentConn = peer.connect(id);
+            currentCall.on('stream', s => document.getElementById('remote-video').srcObject = s);
+            currentConn.on('open', () => currentConn.on('data', d => appendMsg(d, 'remote')));
+        };
+
+        function showCallScreen() {
+            document.getElementById('lobby').classList.add('hidden');
+            document.getElementById('call-screen').classList.remove('hidden');
+        }
+
+        function appendMsg(m, type) {
+            const d = document.createElement('div');
+            d.className = `p-4 rounded-2xl max-w-[80%] ${type === 'me' ? 'bg-blue-600 ml-auto' : 'bg-white/10'}`;
+            d.innerText = m;
+            document.getElementById('chat-messages').appendChild(d);
+            document.getElementById('chat-messages').scrollTop = 9999;
+        }
+
+        document.getElementById('send-btn').onclick = () => {
+            const m = document.getElementById('chat-input').value;
+            if(m && currentConn) { currentConn.send(m); appendMsg(m, 'me'); document.getElementById('chat-input').value = ''; }
+        };
+
+        document.getElementById('toggle-mic').onclick = function() {
+            isMic = !isMic; localStream.getAudioTracks()[0].enabled = isMic;
+            this.classList.toggle('bg-red-600', !isMic);
+        };
+        document.getElementById('toggle-video').onclick = function() {
+            isVid = !isVid; localStream.getVideoTracks()[0].enabled = isVid;
+            this.classList.toggle('bg-red-600', !isVid);
+        };
+        document.getElementById('toggle-chat').onclick = () => document.getElementById('chat-panel').classList.add('open');
+        document.getElementById('close-chat').onclick = () => document.getElementById('chat-panel').classList.remove('open');
+        document.getElementById('hangup-btn').onclick = () => location.reload();
+
+        startApp();
+    </script>
+</body>
+</html>
