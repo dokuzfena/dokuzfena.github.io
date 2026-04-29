@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesli Arama | Final Versiyon</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --ios-bg: #ffffff; --ios-blue: #007aff; --ios-green: #34c759;
+            --ios-red: #ff3b30; --ios-gray: #e5e5ea;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #000; display: flex; justify-content: center;
+            align-items: center; height: 100vh; margin: 0; color: #fff;
+        }
+        .phone-frame {
+            width: 360px; height: 740px; background: var(--ios-bg);
+            border-radius: 45px; position: relative; overflow: hidden;
+            color: #000; display: flex; flex-direction: column;
+            box-shadow: 0 0 30px rgba(255,255,255,0.15);
+        }
+        .status-header { padding: 45px 20px 10px; text-align: center; }
+        .my-number-label { font-size: 11px; color: #8e8e93; text-transform: uppercase; letter-spacing: 1.5px; }
+        #my-id-display { font-size: 22px; font-weight: 700; color: var(--ios-blue); margin-top: 5px; }
+        .number-input-area { font-size: 32px; height: 60px; display: flex; align-items: center; justify-content: center; margin-top: 20px; font-weight: 300; }
+        .dial-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 25px; margin-top: auto; margin-bottom: 30px; }
+        .digit-btn {
+            width: 75px; height: 75px; border-radius: 50%; background: var(--ios-gray);
+            border: none; font-size: 30px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+        }
+        .digit-btn:active { background: #c7c7cc; }
+        .action-btns { grid-column: 1 / span 3; display: flex; justify-content: center; padding-top: 15px; }
+        .call-btn { width: 75px; height: 75px; border-radius: 50%; border: none; background: var(--ios-green); color: white; font-size: 30px; cursor: pointer; }
+        .backspace-btn { position: absolute; right: 40px; bottom: 55px; border: none; background: none; font-size: 24px; color: #8e8e93; cursor: pointer; }
+
+        /* Arama Ekranı (Overlay) */
+        #incall-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(25px);
+            display: none; flex-direction: column; align-items: center;
+            justify-content: space-around; color: white; z-index: 1000;
+            transition: background 0.3s;
+        }
+
+        /* Klavye Modu Stil Değişikliği */
+        .incall-minimized {
+            background: rgba(0,0,0,0.4) !important;
+            justify-content: flex-start !important;
+            padding-top: 50px;
+        }
+        .incall-minimized .call-actions { margin-top: auto; margin-bottom: 50px; }
+
+        .call-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; width: 85%; }
+        .call-action-btn { display: flex; flex-direction: column; align-items: center; color: white; background: none; border: none; cursor: pointer; font-size: 13px; gap: 8px; }
+        .icon-circle {
+            width: 65px; height: 65px; border-radius: 50%; background: rgba(255,255,255,0.12);
+            display: flex; align-items: center; justify-content: center; font-size: 26px; transition: 0.3s;
+        }
+        .icon-circle.active { background: white; color: black; }
+        .hangup-btn { width: 75px; height: 75px; background: var(--ios-red); border-radius: 50%; border: none; color: white; font-size: 32px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="phone-frame">
+    <div class="status-header">
+        <div class="my-number-label">Senin Numaran</div>
+        <div id="my-id-display">BAĞLANIYOR...</div>
+    </div>
+
+    <div class="number-input-area" id="display"></div>
+
+    <div class="dial-pad">
+        <button class="digit-btn" onclick="addDigit('1')">1</button>
+        <button class="digit-btn" onclick="addDigit('2')">2</button>
+        <button class="digit-btn" onclick="addDigit('3')">3</button>
+        <button class="digit-btn" onclick="addDigit('4')">4</button>
+        <button class="digit-btn" onclick="addDigit('5')">5</button>
+        <button class="digit-btn" onclick="addDigit('6')">6</button>
+        <button class="digit-btn" onclick="addDigit('7')">7</button>
+        <button class="digit-btn" onclick="addDigit('8')">8</button>
+        <button class="digit-btn" onclick="addDigit('9')">9</button>
+        <button class="digit-btn" style="background:none"></button>
+        <button class="digit-btn" onclick="addDigit('0')">0</button>
+        <button class="digit-btn" style="background:none"></button>
+        
+        <div class="action-btns">
+            <button class="call-btn" onclick="startCall()"><i class="fas fa-phone"></i></button>
+        </div>
+        <button class="backspace-btn" onclick="backspace()"><i class="fas fa-backspace"></i></button>
+    </div>
+
+    <div id="incall-screen">
+        <div style="text-align:center">
+            <h2 id="remote-number-title" style="font-size: 28px; margin-bottom: 10px;">(5XX) XXX XX XX</h2>
+            <p id="call-status" style="color: #8e8e93; font-size: 18px;">Aranıyor...</p>
+        </div>
+
+        <div class="call-actions">
+            <button class="call-action-btn" onclick="toggleMute()">
+                <div class="icon-circle" id="mute-icon"><i class="fas fa-microphone-slash"></i></div>
+                Sessiz
+            </button>
+            <button class="call-action-btn" onclick="toggleKeypad()">
+                <div class="icon-circle" id="keypad-icon"><i class="fas fa-keyboard"></i></div>
+                Klavye
+            </button>
+            <button class="call-action-btn" onclick="toggleSpeaker()">
+                <div class="icon-circle" id="speaker-icon"><i class="fas fa-volume-up"></i></div>
+                Hoparlör
+            </button>
+        </div>
+
+        <button class="hangup-btn" onclick="endCall()"><i class="fas fa-phone-slash"></i></button>
+    </div>
+</div>
+
+<audio id="audio-stream" autoplay muted style="display:none"></audio>
+
+<script>
+    const generate10DigitId = () => Math.floor(5000000000 + Math.random() * 999999999).toString();
+    const peer = new Peer(generate10DigitId());
+    
+    let currentCall = null;
+    let inputNumber = "";
+    let isSpeakerOn = false; 
+    let localStream = null;
+    let audioContext, gainNode, source;
+
+    peer.on('open', (id) => { document.getElementById('my-id-display').innerText = formatNumber(id); });
+
+    function addDigit(digit) { if (inputNumber.length < 10) { inputNumber += digit; updateDisplay(); } }
+    function backspace() { inputNumber = inputNumber.slice(0, -1); updateDisplay(); }
+    function updateDisplay() { document.getElementById('display').innerText = formatNumber(inputNumber); }
+    function formatNumber(num) { return num.replace(/(\d{3})(\d{3})(\d{2})(\d{2})/, "($1) $2 $3 $4"); }
+
+    function setupAudioProcessing(remoteStream) {
+        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (source) source.disconnect();
+        source = audioContext.createMediaStreamSource(remoteStream);
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.1; // Varsayılan Ahize Modu
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+    }
+
+    async function startCall() {
+        if (inputNumber.length < 10) return alert("10 hane girin.");
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            currentCall = peer.call(inputNumber, localStream);
+            showCallScreen(inputNumber, "Aranıyor...");
+            setupCallListeners(currentCall);
+        } catch (err) { alert("Mikrofon hatası!"); }
+    }
+
+    peer.on('call', async (call) => {
+        if (confirm(formatNumber(call.peer) + " arıyor. Cevapla?")) {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            call.answer(localStream);
+            currentCall = call;
+            showCallScreen(call.peer, "Bağlandı");
+            setupCallListeners(call);
+        }
+    });
+
+    function setupCallListeners(call) {
+        call.on('stream', (remoteStream) => {
+            document.getElementById('audio-stream').srcObject = remoteStream;
+            setupAudioProcessing(remoteStream);
+            document.getElementById('call-status').innerText = "Görüşülüyor";
+        });
+        call.on('close', hideCallScreen);
+    }
+
+    function toggleSpeaker() {
+        if (!gainNode) return;
+        const icon = document.getElementById('speaker-icon');
+        isSpeakerOn = !isSpeakerOn;
+        if (isSpeakerOn) {
+            gainNode.gain.setTargetAtTime(1.2, audioContext.currentTime, 0.1); 
+            icon.classList.add('active');
+        } else {
+            gainNode.gain.setTargetAtTime(0.08, audioContext.currentTime, 0.1); 
+            icon.classList.remove('active');
+        }
+    }
+
+    function toggleMute() {
+        if (!localStream) return;
+        const icon = document.getElementById('mute-icon');
+        const audioTrack = localStream.getAudioTracks()[0];
+        audioTrack.enabled = !audioTrack.enabled;
+        icon.classList.toggle('active', !audioTrack.enabled);
+    }
+
+    // Klavye Fonksiyonu: Ekranı şeffaflaştırır ve arkadaki tuşlara basmaya izin verir
+    function toggleKeypad() {
+        const callScreen = document.getElementById('incall-screen');
+        const icon = document.getElementById('keypad-icon');
+        if (callScreen.classList.contains('incall-minimized')) {
+            callScreen.classList.remove('incall-minimized');
+            icon.classList.remove('active');
+            callScreen.style.pointerEvents = "auto";
+        } else {
+            callScreen.classList.add('incall-minimized');
+            icon.classList.add('active');
+            callScreen.style.pointerEvents = "none";
+            document.querySelector('.call-actions').style.pointerEvents = "auto";
+            document.querySelector('.hangup-btn').style.pointerEvents = "auto";
+        }
+    }
+
+    function showCallScreen(id, status) {
+        document.getElementById('remote-number-title').innerText = formatNumber(id);
+        document.getElementById('call-status').innerText = status;
+        document.getElementById('incall-screen').style.display = 'flex';
+    }
+
+    function hideCallScreen() {
+        const callScreen = document.getElementById('incall-screen');
+        callScreen.style.display = 'none';
+        callScreen.classList.remove('incall-minimized');
+        callScreen.style.pointerEvents = "auto";
+        document.getElementById('keypad-icon').classList.remove('active');
+        inputNumber = ""; updateDisplay();
+        isSpeakerOn = false;
+        document.getElementById('speaker-icon').classList.remove('active');
+        if (localStream) localStream.getTracks().forEach(t => t.stop());
+        if (audioContext) audioContext.suspend();
+    }
+
+    function endCall() { if (currentCall) currentCall.close(); hideCallScreen(); }
+</script>
+</body>
+</html>
