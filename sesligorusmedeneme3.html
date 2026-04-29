@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesli Arama | Ahize Kontrolü</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --ios-bg: #ffffff; --ios-blue: #007aff; --ios-green: #34c759;
+            --ios-red: #ff3b30; --ios-gray: #e5e5ea;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #000; display: flex; justify-content: center;
+            align-items: center; height: 100vh; margin: 0; color: #fff;
+        }
+
+        .phone-frame {
+            width: 360px; height: 720px; background: var(--ios-bg);
+            border-radius: 45px; position: relative; overflow: hidden;
+            color: #000; display: flex; flex-direction: column;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+
+        /* Üst Panel */
+        .status-header { padding: 40px 20px 10px; text-align: center; }
+        .my-number-label { font-size: 12px; color: #8e8e93; text-transform: uppercase; letter-spacing: 1px; }
+        #my-id-display { font-size: 20px; font-weight: 600; color: var(--ios-blue); margin-top: 5px; }
+
+        /* Numara Ekranı */
+        .number-input-area { font-size: 32px; height: 60px; display: flex; align-items: center; justify-content: center; margin-top: 20px; }
+
+        /* Tuş Takımı */
+        .dial-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 30px; margin-top: auto; margin-bottom: 40px; }
+        .digit-btn {
+            width: 75px; height: 75px; border-radius: 50%; background: var(--ios-gray);
+            border: none; font-size: 28px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        .action-btns { grid-column: 1 / span 3; display: flex; justify-content: center; padding-top: 10px; }
+        .call-btn { width: 75px; height: 75px; border-radius: 50%; border: none; background: var(--ios-green); color: white; font-size: 28px; cursor: pointer; }
+
+        /* Arama Ekranı (Overlay) */
+        #incall-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(20px);
+            display: none; flex-direction: column; align-items: center;
+            justify-content: space-around; color: white; z-index: 1000;
+        }
+
+        .call-actions {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 80%;
+        }
+
+        .call-action-btn {
+            display: flex; flex-direction: column; align-items: center; color: white;
+            background: none; border: none; cursor: pointer; font-size: 14px;
+        }
+
+        .icon-circle {
+            width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-bottom: 8px; transition: 0.3s;
+        }
+
+        .icon-circle.active { background: white; color: black; }
+
+        .hangup-btn { width: 75px; height: 75px; background: var(--ios-red); border-radius: 50%; border: none; color: white; font-size: 28px; }
+    </style>
+</head>
+<body>
+
+<div class="phone-frame">
+    <div class="status-header">
+        <div class="my-number-label">Senin Numaran</div>
+        <div id="my-id-display">Tahsis ediliyor...</div>
+    </div>
+
+    <div class="number-input-area" id="display"></div>
+
+    <div class="dial-pad">
+        <button class="digit-btn" onclick="addDigit('1')">1</button>
+        <button class="digit-btn" onclick="addDigit('2')">2</button>
+        <button class="digit-btn" onclick="addDigit('3')">3</button>
+        <button class="digit-btn" onclick="addDigit('4')">4</button>
+        <button class="digit-btn" onclick="addDigit('5')">5</button>
+        <button class="digit-btn" onclick="addDigit('6')">6</button>
+        <button class="digit-btn" onclick="addDigit('7')">7</button>
+        <button class="digit-btn" onclick="addDigit('8')">8</button>
+        <button class="digit-btn" onclick="addDigit('9')">9</button>
+        <button class="digit-btn" style="background:none"></button>
+        <button class="digit-btn" onclick="addDigit('0')">0</button>
+        <button class="digit-btn" style="background:none" onclick="backspace()"><i class="fas fa-backspace"></i></button>
+        
+        <div class="action-btns">
+            <button class="call-btn" onclick="startCall()"><i class="fas fa-phone"></i></button>
+        </div>
+    </div>
+
+    <div id="incall-screen">
+        <div style="text-align:center">
+            <h2 id="remote-number-title">0500 000 00 00</h2>
+            <p id="call-status">Bağlanıyor...</p>
+        </div>
+
+        <div class="call-actions">
+            <button class="call-action-btn" onclick="toggleMute()">
+                <div class="icon-circle" id="mute-icon"><i class="fas fa-microphone-slash"></i></div>
+                Sessiz
+            </button>
+            <button class="call-action-btn" onclick="toggleSpeaker()">
+                <div class="icon-circle" id="speaker-icon"><i class="fas fa-volume-up"></i></div>
+                Hoparlör
+            </button>
+            <button class="call-action-btn">
+                <div class="icon-circle"><i class="fas fa-plus"></i></div>
+                Ekle
+            </button>
+        </div>
+
+        <button class="hangup-btn" onclick="endCall()"><i class="fas fa-phone-slash"></i></button>
+    </div>
+</div>
+
+<audio id="audio-stream" autoplay></audio>
+
+<script>
+    const generate10DigitId = () => Math.floor(5000000000 + Math.random() * 999999999).toString();
+    const peer = new Peer(generate10DigitId());
+    let currentCall = null;
+    let inputNumber = "";
+    let isSpeakerOn = false;
+    let localStream = null;
+
+    peer.on('open', (id) => { document.getElementById('my-id-display').innerText = formatNumber(id); });
+
+    function addDigit(digit) { if (inputNumber.length < 10) { inputNumber += digit; updateDisplay(); } }
+    function backspace() { inputNumber = inputNumber.slice(0, -1); updateDisplay(); }
+    function updateDisplay() { document.getElementById('display').innerText = formatNumber(inputNumber); }
+    function formatNumber(num) { return num.replace(/(\d{3})(\d{3})(\d{2})(\d{2})/, "($1) $2 $3 $4"); }
+
+    async function startCall() {
+        if (inputNumber.length < 10) return alert("10 hane girin.");
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            currentCall = peer.call(inputNumber, localStream);
+            showCallScreen(inputNumber, "Aranıyor...");
+            setupCallListeners(currentCall);
+        } catch (err) { alert("Mikrofon hatası!"); }
+    }
+
+    peer.on('call', async (call) => {
+        if (confirm(formatNumber(call.peer) + " arıyor. Cevapla?")) {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            call.answer(localStream);
+            currentCall = call;
+            showCallScreen(call.peer, "Görüşülüyor");
+            setupCallListeners(call);
+        }
+    });
+
+    function setupCallListeners(call) {
+        call.on('stream', (remoteStream) => {
+            const audio = document.getElementById('audio-stream');
+            audio.srcObject = remoteStream;
+            // Varsayılan olarak AHİZE modunda başlat (sesi kıs)
+            audio.volume = 0.3; 
+        });
+        call.on('close', hideCallScreen);
+    }
+
+    // --- MANUEL TUŞ ÖZELLİKLERİ ---
+    
+    function toggleSpeaker() {
+        const audio = document.getElementById('audio-stream');
+        const icon = document.getElementById('speaker-icon');
+        isSpeakerOn = !isSpeakerOn;
+
+        if (isSpeakerOn) {
+            audio.volume = 1.0; // Hoparlör modu: Tam ses
+            icon.classList.add('active');
+        } else {
+            audio.volume = 0.2; // Ahize modu: Düşük ses (kulağa dayamak için)
+            icon.classList.remove('active');
+        }
+    }
+
+    function toggleMute() {
+        const icon = document.getElementById('mute-icon');
+        const enabled = localStream.getAudioTracks()[0].enabled;
+        localStream.getAudioTracks()[0].enabled = !enabled;
+        icon.classList.toggle('active', enabled);
+    }
+
+    function showCallScreen(id, status) {
+        document.getElementById('remote-number-title').innerText = formatNumber(id);
+        document.getElementById('call-status').innerText = status;
+        document.getElementById('incall-screen').style.display = 'flex';
+    }
+
+    function hideCallScreen() {
+        document.getElementById('incall-screen').style.display = 'none';
+        inputNumber = ""; updateDisplay();
+        if (localStream) localStream.getTracks().forEach(t => t.stop());
+    }
+
+    function endCall() { if (currentCall) currentCall.close(); hideCallScreen(); }
+</script>
+
+</body>
+</html>
