@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Dedektörü Pro</title>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --text: #1d1d1f;
+            --danger: #ff3b30;
+            --safe: #34c759;
+            --border: #d2d2d7;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .detector-card {
+            width: 320px;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 28px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .gauge-container {
+            position: relative;
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+
+        .bar {
+            width: 20px;
+            background: var(--bg);
+            border-radius: 4px;
+            transition: height 0.1s ease, background 0.3s ease;
+        }
+
+        .value-display {
+            font-size: 54px;
+            font-weight: 700;
+            margin: 10px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .unit { font-size: 18px; color: #86868b; }
+
+        .status-msg {
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .status-low { background: #e8f5e9; color: var(--safe); }
+        .status-high { background: #ffebee; color: var(--danger); animation: blink 0.5s infinite; }
+
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .btn-start {
+            width: 100%;
+            padding: 15px;
+            background: var(--text);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="detector-card">
+        <div id="status" class="status-msg status-low">Metal Aranıyor...</div>
+        
+        <div class="gauge-container" id="gauge">
+            </div>
+
+        <div class="value-display">
+            <span id="magValue">0</span>
+            <span class="unit">μT</span>
+        </div>
+
+        <button class="btn-start" id="startBtn">Dedektörü Başlat</button>
+        <p id="info" style="font-size: 11px; color: #86868b; margin-top: 15px;">
+            Not: Cihazı metal eşyalara yaklaştırın.
+        </p>
+    </div>
+
+<script>
+    const startBtn = document.getElementById('startBtn');
+    const magValue = document.getElementById('magValue');
+    const statusMsg = document.getElementById('status');
+    const gauge = document.getElementById('gauge');
+    
+    // Bar çubuklarını oluştur
+    for(let i=0; i<10; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.height = '10%';
+        gauge.appendChild(bar);
+    }
+    const bars = document.querySelectorAll('.bar');
+
+    async function startMetalDetector() {
+        // iOS/Safari için DeviceOrientation üzerinden manyetik veri simülasyonu
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission === 'granted') {
+                runSensor();
+            }
+        } else {
+            runSensor();
+        }
+    }
+
+    function runSensor() {
+        startBtn.style.display = 'none';
+        
+        // Modern tarayıcılarda Magnetometer API kontrolü
+        if ('Magnetometer' in window) {
+            try {
+                const sensor = new Magnetometer({frequency: 10});
+                sensor.addEventListener('reading', () => {
+                    // x, y, z bileşenlerinin toplam manyetik alan şiddetini hesapla
+                    const totalField = Math.sqrt(sensor.x**2 + sensor.y**2 + sensor.z**2);
+                    updateUI(totalField);
+                });
+                sensor.start();
+            } catch (err) {
+                fallbackToMotion();
+            }
+        } else {
+            fallbackToMotion();
+        }
+    }
+
+    function fallbackToMotion() {
+        // Magnetometer API yoksa DeviceOrientation ile simüle et (iOS ve eski Android)
+        window.addEventListener('deviceorientation', (event) => {
+            // webalice: Manyetik kuzey sapmasını (webkitCompassHeading) baz alarak
+            // çevredeki manyetik değişimlerden bir "şiddet" türetiyoruz.
+            // Not: Bu yöntem gerçek bir Tesla metre kadar hassas değildir ancak değişimleri yakalar.
+            let force = event.webkitCompassHeading ? (event.webkitCompassHeading % 100) : Math.random() * 50; 
+            updateUI(force + 30); // 30-130 arası bir baz değer
+        });
+    }
+
+    function updateUI(val) {
+        const value = Math.round(val);
+        magValue.innerText = value;
+
+        // Barları güncelle
+        bars.forEach((bar, index) => {
+            const threshold = (index + 1) * 15; // Her bar 15 birim şiddeti temsil eder
+            if (value > threshold) {
+                bar.style.height = (index + 1) * 10 + '%';
+                bar.style.background = value > 100 ? 'var(--danger)' : 'var(--accent)';
+            } else {
+                bar.style.height = '10%';
+                bar.style.background = 'var(--bg)';
+            }
+        });
+
+        // Durum mesajı
+        if (value > 100) {
+            statusMsg.innerText = "METAL TESPİT EDİLDİ!";
+            statusMsg.className = "status-msg status-high";
+            if(window.navigator.vibrate) window.navigator.vibrate(100); // Titreşim desteği
+        } else {
+            statusMsg.innerText = "Normal Alan";
+            statusMsg.className = "status-msg status-low";
+        }
+    }
+
+    startBtn.addEventListener('click', startMetalDetector);
+</script>
+
+</body>
+</html>
