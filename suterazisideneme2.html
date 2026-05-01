@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gelişmiş Su Terazisi</title>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --text: #1d1d1f;
+            --accent: #34c759;
+            --border: #d2d2d7;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .level-container {
+            width: 280px;
+            height: 280px;
+            background: var(--card);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bubble {
+            width: 45px;
+            height: 45px;
+            background: var(--text);
+            border-radius: 50%;
+            position: absolute;
+            transition: 0.1s ease-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+
+        .target-cross {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: #e5e5e7;
+        }
+        .target-cross.v { transform: rotate(90deg); }
+
+        .info-panel {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .angle-display {
+            font-size: 32px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .btn-start {
+            margin-top: 20px;
+            padding: 16px 32px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #error-msg {
+            color: #ff3b30;
+            font-size: 13px;
+            margin-top: 15px;
+            display: none;
+            padding: 0 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="level-container">
+        <div class="target-cross"></div>
+        <div class="target-cross v"></div>
+        <div id="bubble" class="bubble"></div>
+    </div>
+
+    <div class="info-panel">
+        <div class="angle-display">X: <span id="valX">0</span>° | Y: <span id="valY">0</span>°</div>
+        <button id="startBtn" class="btn-start">Sensörleri Aktif Et</button>
+        <p id="error-msg"></p>
+    </div>
+
+<script>
+    const bubble = document.getElementById('bubble');
+    const valX = document.getElementById('valX');
+    const valY = document.getElementById('valY');
+    const startBtn = document.getElementById('startBtn');
+    const errorMsg = document.getElementById('error-msg');
+
+    async function handlePermission() {
+        // iOS 13+ için özel izin kontrolü
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceOrientationEvent.requestPermission();
+                if (permission === 'granted') {
+                    initSensors();
+                } else {
+                    showError("Sensör izni reddedildi. Lütfen tarayıcı ayarlarından izin verin.");
+                }
+            } catch (err) {
+                showError("İzin istenirken bir hata oluştu.");
+            }
+        } else {
+            // Android veya standart tarayıcılar
+            if (window.DeviceOrientationEvent) {
+                initSensors();
+            } else {
+                showError("Cihazınızda hareket sensörü bulunamadı.");
+            }
+        }
+    }
+
+    function initSensors() {
+        startBtn.style.display = 'none';
+        errorMsg.style.display = 'none';
+
+        window.addEventListener('deviceorientation', (e) => {
+            // Gamma: Sağ-Sol (-90 to 90), Beta: Ön-Arka (-180 to 180)
+            let x = e.gamma || 0;
+            let y = e.beta || 0;
+
+            // Görselleştirme (Hassasiyeti artırmak için çarpan)
+            let moveX = x * 2.5;
+            let moveY = y * 2.5;
+
+            // Sınırlandırma (Container dışına çıkmasın)
+            moveX = Math.max(-115, Math.min(115, moveX));
+            moveY = Math.max(-115, Math.min(115, moveY));
+
+            bubble.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            
+            // Metin güncelleme
+            valX.innerText = Math.round(x);
+            valY.innerText = Math.round(y);
+
+            // Tam denge kontrolü (Yeşil renk efekti)
+            if (Math.abs(x) < 1 && Math.abs(y) < 1) {
+                bubble.style.backgroundColor = "var(--accent)";
+            } else {
+                bubble.style.backgroundColor = "var(--text)";
+            }
+        }, true);
+    }
+
+    function showError(text) {
+        errorMsg.innerText = text;
+        errorMsg.style.display = 'block';
+    }
+
+    startBtn.addEventListener('click', handlePermission);
+</script>
+
+</body>
+</html>
