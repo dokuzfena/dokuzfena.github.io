@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR & Barkod Merkezi Pro</title>
+    <title>QR & Barkod Merkezi</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     
@@ -47,12 +47,13 @@
 
         .tab-btn {
             flex: 1;
-            padding: 10px;
+            padding: 12px;
             border: none;
             border-radius: 9px;
             background: none;
             cursor: pointer;
             font-weight: 600;
+            transition: 0.2s;
         }
 
         .tab-btn.active {
@@ -63,7 +64,6 @@
         .content { display: none; text-align: center; }
         .content.active { display: block; }
 
-        /* Oluşturucu */
         input {
             width: 100%;
             padding: 14px;
@@ -72,22 +72,23 @@
             border-radius: 12px;
             margin-bottom: 20px;
             font-size: 15px;
+            outline: none;
         }
 
         #qrcode {
-            margin: 20px auto;
+            margin: 10px auto;
             padding: 15px;
             background: white;
             display: inline-block;
             border-radius: 12px;
         }
 
-        /* Tarayıcı */
         #reader {
             width: 100%;
             border-radius: 18px;
             overflow: hidden;
             border: none !important;
+            background: #000;
         }
 
         .result-box {
@@ -98,6 +99,7 @@
             word-break: break-all;
             border: 1px solid var(--border);
             margin-top: 15px;
+            min-height: 40px;
         }
 
         .btn {
@@ -111,89 +113,111 @@
             cursor: pointer;
             margin-top: 15px;
         }
+
+        #qr-canvas { display: none; } /* İndirme için gizli canvas */
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('create', this)">QR Oluştur</button>
-        <button class="tab-btn" onclick="switchTab('scan', this)">QR Tara</button>
+        <button class="tab-btn active" onclick="switchTab('create', this)">Oluştur</button>
+        <button class="tab-btn" onclick="switchTab('scan', this)">Tara</button>
     </div>
 
     <div id="create-content" class="content active">
-        <input type="text" id="qr-text" placeholder="URL veya metin yazın..." oninput="generateQR()">
+        <input type="text" id="qr-input" placeholder="Metin veya link girin..." oninput="generateQR()">
         <div id="qrcode"></div>
+        <p style="font-size: 11px; color: var(--subtext);">Otomatik olarak güncellenir.</p>
     </div>
 
     <div id="scan-content" class="content">
         <div id="reader"></div>
-        <div id="scan-result" class="result-box">Kamera başlatılmadı.</div>
-        <button id="start-scan-btn" class="btn" onclick="initScanner()">Kamerayı Başlat</button>
+        <div id="scan-result" class="result-box">Kamera izni bekleniyor...</div>
+        <button id="start-btn" class="btn" onclick="initScanner()">Kamerayı Başlat</button>
+        <button id="stop-btn" class="btn" style="display:none; background:#ff3b30;" onclick="stopScanner()">Durdur</button>
     </div>
 </div>
 
 <script>
-    // SEKME SİSTEMİ
+    // --- SEKME YÖNETİMİ ---
     function switchTab(type, btn) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-        
         btn.classList.add('active');
         document.getElementById(type + '-content').classList.add('active');
-        
-        if(type !== 'scan') {
-            stopScanner();
-        }
+        if (type !== 'scan') stopScanner();
     }
 
     // --- QR OLUŞTURUCU ---
-    const qrDiv = document.getElementById("qrcode");
-    let qrcodeGen = new QRCode(qrDiv, { width: 200, height: 200 });
+    const qrContainer = document.getElementById("qrcode");
+    const qrcode = new QRCode(qrContainer, {
+        width: 200,
+        height: 200,
+        colorDark : "#1d1d1f",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
 
     function generateQR() {
-        const text = document.getElementById("qr-text").value;
-        if (text.trim() !== "") {
-            qrcodeGen.makeCode(text);
+        const val = document.getElementById("qr-input").value;
+        if (val.trim() === "") {
+            qrcode.makeCode("https://google.com");
+        } else {
+            qrcode.makeCode(val);
         }
     }
-    qrcodeGen.makeCode("https://google.com");
+    generateQR(); // Başlangıç kodu
 
-    // --- QR TARAYICI (Garantili Yöntem) ---
-    let html5QrCode;
+    // --- QR TARAYICI (Garantili Mod) ---
+    let scanner = null;
 
-    function initScanner() {
+    async function initScanner() {
         const resultBox = document.getElementById('scan-result');
-        const startBtn = document.getElementById('start-scan-btn');
-        
-        startBtn.style.display = "none";
-        resultBox.innerText = "Kamera hazırlanıyor...";
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
 
-        html5QrCode = new Html5Qrcode("reader");
+        resultBox.innerText = "Kamera başlatılıyor...";
         
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        if (!scanner) {
+            scanner = new Html5Qrcode("reader");
+        }
 
-        html5QrCode.start(
-            { facingMode: "environment" }, 
+        const config = { 
+            fps: 15, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0 
+        };
+
+        // Kamera başlatma denemesi
+        scanner.start(
+            { facingMode: "environment" }, // Arka kamerayı dene
             config,
-            (decodedText) => {
-                // Başarılı okuma
-                resultBox.innerHTML = `<strong>Sonuç:</strong> <br> ${decodedText}`;
-                if(navigator.vibrate) navigator.vibrate(100);
-            },
-            (errorMessage) => {
-                // Sürekli tarama yaptığı için burayı boş bırakıyoruz
+            (text) => {
+                resultBox.innerHTML = `<strong>Sonuç:</strong><br><a href="${text}" target="_blank" style="color:#0071e3">${text}</a>`;
+                if (navigator.vibrate) navigator.vibrate(100);
             }
-        ).catch((err) => {
-            resultBox.innerText = "Hata: " + err;
-            startBtn.style.display = "block";
+        ).then(() => {
+            startBtn.style.display = "none";
+            stopBtn.style.display = "block";
+            resultBox.innerText = "Kod bekleniyor...";
+        }).catch(err => {
+            console.error(err);
+            // Eğer arka kamera hatası (NotAllowed/NotFound) ise herhangi bir kamerayı dene
+            scanner.start({ facingMode: "user" }, config, (text) => {
+                resultBox.innerText = "Sonuç: " + text;
+            }).catch(err2 => {
+                resultBox.innerHTML = `<span style="color:#ff3b30">Hata: İzin reddedildi.</span><br><small>Lütfen tarayıcı ayarlarından kamera iznini açın.</small>`;
+                startBtn.style.display = "block";
+            });
         });
     }
 
     function stopScanner() {
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop().then(() => {
-                document.getElementById('start-scan-btn').style.display = "block";
+        if (scanner && scanner.isScanning) {
+            scanner.stop().then(() => {
+                document.getElementById('start-btn').style.display = "block";
+                document.getElementById('stop-btn').style.display = "none";
                 document.getElementById('scan-result').innerText = "Kamera durduruldu.";
             });
         }
