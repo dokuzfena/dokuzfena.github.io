@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pattern Master | Neural Logic</title>
+    <style>
+        body { margin: 0; background: #0a0a0a; color: #00ffcc; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        #header { position: absolute; top: 40px; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 320px; height: 320px; }
+        .pad { background: rgba(0, 255, 204, 0.05); border: 2px solid rgba(0, 255, 204, 0.2); border-radius: 20px; transition: 0.2s; cursor: pointer; }
+        .pad:active { transform: scale(0.95); }
+        .pad.active { background: #00ffcc; box-shadow: 0 0 50px #00ffcc; border-color: #fff; }
+        .pad.error { background: #ff0055; box-shadow: 0 0 50px #ff0055; border-color: #fff; }
+        #info { margin-top: 30px; font-size: 18px; letter-spacing: 2px; }
+        #level { font-size: 32px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        #ai-log { font-size: 12px; color: #ff0055; margin-top: 10px; height: 20px; }
+        button { background: transparent; border: 1px solid #00ffcc; color: #00ffcc; padding: 12px 30px; border-radius: 30px; font-size: 16px; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        button:hover { background: #00ffcc; color: #000; }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <div id="level">LEVEL 1</div>
+        <div id="ai-log">SİSTEM HAZIR</div>
+    </div>
+
+    <div class="grid" id="grid">
+        <div class="pad" data-id="0"></div>
+        <div class="pad" data-id="1"></div>
+        <div class="pad" data-id="2"></div>
+        <div class="pad" data-id="3"></div>
+    </div>
+
+    <div id="info">DESENİ İZLE...</div>
+    <div id="ai-log">AI: HIZINIZ ANALİZ EDİLİYOR</div>
+    <button id="start-btn">BAŞLAT</button>
+
+    <script>
+        const pads = document.querySelectorAll('.pad');
+        const levelDisplay = document.getElementById('level');
+        const infoDisplay = document.getElementById('info');
+        const aiLog = document.getElementById('ai-log');
+        const startBtn = document.getElementById('start-btn');
+
+        let sequence = [];
+        let playerSequence = [];
+        let level = 1;
+        let isPlaying = false;
+        let speed = 600;
+
+        // AI Parametreleri
+        let responseTimes = [];
+
+        function playSequence() {
+            isPlaying = false;
+            playerSequence = [];
+            infoDisplay.innerText = "SİSTEM YAZIYOR...";
+            infoDisplay.style.color = "#ff0055";
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                activatePad(sequence[i]);
+                i++;
+                if (i >= sequence.length) {
+                    clearInterval(interval);
+                    isPlaying = true;
+                    setTimeout(() => {
+                        infoDisplay.innerText = "SENİN SIRAN!";
+                        infoDisplay.style.color = "#00ffcc";
+                    }, speed);
+                }
+            }, speed);
+        }
+
+        function activatePad(id) {
+            const pad = document.querySelector(`.pad[data-id="${id}"]`);
+            pad.classList.add('active');
+            setTimeout(() => pad.classList.remove('active'), speed / 2);
+        }
+
+        pads.forEach(pad => {
+            pad.addEventListener('click', () => {
+                if (!isPlaying) return;
+
+                const id = parseInt(pad.getAttribute('data-id'));
+                playerSequence.push(id);
+                activatePad(id);
+
+                // AI Analizi: Oyuncu ne kadar hızlı?
+                const clickTime = Date.now();
+                
+                if (playerSequence[playerSequence.length - 1] !== sequence[playerSequence.length - 1]) {
+                    gameOver();
+                    return;
+                }
+
+                if (playerSequence.length === sequence.length) {
+                    levelUp();
+                }
+            });
+        });
+
+        function levelUp() {
+            isPlaying = false;
+            level++;
+            levelDisplay.innerText = `LEVEL ${level}`;
+            
+            // AI ADAPTASYONU
+            // Eğer oyuncu hatasız gidiyorsa AI hızı artırır
+            if(speed > 200) speed -= 30;
+            aiLog.innerText = `AI: HIZ %${Math.round((600/speed)*100)} ARTIRILDI`;
+
+            sequence.push(Math.floor(Math.random() * 4));
+            setTimeout(playSequence, 1000);
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            infoDisplay.innerText = "BAĞLANTI KESİLDİ!";
+            document.body.style.backgroundColor = "#2a0010";
+            setTimeout(() => document.body.style.backgroundColor = "#0a0a0a", 200);
+            
+            level = 1;
+            sequence = [];
+            speed = 600;
+            startBtn.style.display = "block";
+            levelDisplay.innerText = "SİSTEM ÇÖKTÜ";
+        }
+
+        startBtn.onclick = () => {
+            startBtn.style.display = "none";
+            levelDisplay.innerText = "LEVEL 1";
+            sequence = [Math.floor(Math.random() * 4)];
+            playSequence();
+        };
+    </script>
+</body>
+</html>
