@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR & Barkod Merkezi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --text: #1d1d1f;
+            --accent: #0071e3;
+            --border: #d2d2d7;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 450px;
+            background: var(--card);
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
+        }
+
+        /* Sekme Sistemi */
+        .tabs {
+            display: flex;
+            background: #eee;
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 9px;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .content { display: none; text-align: center; }
+        .content.active { display: block; }
+
+        /* Oluşturucu Kısmı */
+        input {
+            width: 100%;
+            padding: 14px;
+            box-sizing: border-box;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        #qrcode {
+            margin: 20px auto;
+            padding: 15px;
+            background: white;
+            display: inline-block;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+
+        /* Tarayıcı Kısmı */
+        #video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: #000;
+            border-radius: 18px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        .scan-frame {
+            position: absolute;
+            top: 20%; left: 20%; width: 60%; height: 60%;
+            border: 2px solid white;
+            border-radius: 15px;
+            box-shadow: 0 0 0 2000px rgba(0,0,0,0.5);
+        }
+
+        .result-box {
+            background: #fbfbfd;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            word-break: break-all;
+            border: 1px solid var(--border);
+            min-height: 40px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--text);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('create')">QR Oluştur</button>
+        <button class="tab-btn" onclick="switchTab('scan')">QR Tara</button>
+    </div>
+
+    <div id="create-content" class="content active">
+        <input type="text" id="qr-text" placeholder="URL veya metin yazın..." oninput="generateQR()">
+        <div id="qrcode"></div>
+        <p style="font-size: 12px; color: #888;">Yazmaya başladığınızda kod otomatik oluşur.</p>
+    </div>
+
+    <div id="scan-content" class="content">
+        <div id="video-container">
+            <video id="video"></video>
+            <div class="scan-frame"></div>
+        </div>
+        <div id="scan-result" class="result-box">Sonuç bekleniyor...</div>
+        <button class="btn" onclick="startScanner()">Kamerayı Başlat</button>
+    </div>
+</div>
+
+<script>
+    // Sekme Değiştirme
+    function switchTab(type) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        
+        event.target.classList.add('active');
+        document.getElementById(type + '-content').classList.add('active');
+        
+        if(type !== 'scan') stopScanner();
+    }
+
+    // --- QR OLUŞTURUCU ---
+    const qrDiv = document.getElementById("qrcode");
+    let qrcode = new QRCode(qrDiv, { width: 200, height: 200 });
+
+    function generateQR() {
+        const text = document.getElementById("qr-text").value;
+        if (text.trim() === "") {
+            qrDiv.style.opacity = "0";
+        } else {
+            qrDiv.style.opacity = "1";
+            qrcode.makeCode(text);
+        }
+    }
+    // Varsayılan bir kod oluştur
+    qrcode.makeCode("https://google.com");
+
+    // --- QR TARAYICI (Native Barcode Detection) ---
+    let stream = null;
+
+    async function startScanner() {
+        const video = document.getElementById('video');
+        const resultBox = document.getElementById('scan-result');
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = stream;
+            video.play();
+
+            // Tarayıcı desteği kontrolü (BarcodeDetector modern Chrome/Android'de çalışır)
+            if (!('BarcodeDetector' in window)) {
+                resultBox.innerText = "Hata: Tarayıcınız yerleşik barkod okumayı desteklemiyor. (iOS/Safari için kütüphane eklenmeli)";
+                return;
+            }
+
+            const detector = new BarcodeDetector({ formats: ['qr_code', 'ean_13', 'code_128'] });
+
+            const scanFrame = async () => {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    try {
+                        const barcodes = await detector.detect(video);
+                        if (barcodes.length > 0) {
+                            const value = barcodes[0].rawValue;
+                            resultBox.innerHTML = `<strong>Sonuç:</strong> <br> ${value}`;
+                            if(navigator.vibrate) navigator.vibrate(100);
+                        }
+                    } catch (e) { console.error(e); }
+                }
+                if (stream) requestAnimationFrame(scanFrame);
+            };
+            scanFrame();
+
+        } catch (err) {
+            resultBox.innerText = "Kamera izni verilmedi veya bulunamadı.";
+        }
+    }
+
+    function stopScanner() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+    }
+</script>
+
+</body>
+</html>
