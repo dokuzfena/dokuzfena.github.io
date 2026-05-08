@@ -8,98 +8,20 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #000; --bg: #f3f4f6; --white: #ffffff; --border: #e5e7eb; }
-        
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        
-        body { 
-            background: var(--bg); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            padding: 20px; /* Mobil ekranlarda kenarlardan boşluk */
-        }
-
-        .box { 
-            background: var(--white); 
-            padding: 30px; 
-            border-radius: 16px; 
-            width: 100%; 
-            max-width: 400px; 
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); 
-        }
-
-        h2 { 
-            text-align: center; 
-            margin-bottom: 25px; 
-            font-weight: 800; 
-            letter-spacing: -1.5px; 
-            font-size: 1.8rem;
-        }
-
-        .tabs { 
-            display: flex; 
-            margin-bottom: 25px; 
-            background: #f9fafb;
-            padding: 5px;
-            border-radius: 10px;
-        }
-
-        .tab { 
-            flex: 1; 
-            text-align: center; 
-            padding: 12px; 
-            cursor: pointer; 
-            color: #6b7280; 
-            font-weight: 600; 
-            font-size: 0.9rem;
-            border-radius: 8px;
-            transition: 0.2s;
-        }
-
-        .tab.active { 
-            background: var(--white);
-            color: var(--primary); 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
+        body { background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .box { background: var(--white); padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-bottom: 25px; font-weight: 800; letter-spacing: -1.5px; font-size: 1.8rem; }
+        .tabs { display: flex; margin-bottom: 25px; background: #f9fafb; padding: 5px; border-radius: 10px; }
+        .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; color: #6b7280; font-weight: 600; font-size: 0.9rem; border-radius: 8px; transition: 0.2s; }
+        .tab.active { background: var(--white); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         form { display: flex; flex-direction: column; gap: 15px; }
-
-        input, select { 
-            width: 100%;
-            padding: 14px; 
-            border: 1px solid var(--border); 
-            border-radius: 10px; 
-            font-size: 1rem; /* Mobilde zoom yapmaması için ideal boyut */
-            outline: none;
-            transition: 0.3s;
-        }
-
-        input:focus { border-color: var(--primary); ring: 2px solid var(--primary); }
-
-        button { 
-            padding: 16px; 
-            background: var(--primary); 
-            color: #fff; 
-            border: none; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            font-weight: 700; 
-            font-size: 1rem;
-            margin-top: 10px;
-            transition: 0.3s;
-        }
-
+        input, select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; outline: none; transition: 0.3s; }
+        button { padding: 16px; background: var(--primary); color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 1rem; margin-top: 10px; transition: 0.3s; }
+        button:hover { opacity: 0.9; }
         button:active { transform: scale(0.98); }
-
         .hidden { display: none; }
-
-        /* Mobil Düzenlemeler */
-        @media (max-width: 480px) {
-            .box { padding: 20px; }
-            h2 { font-size: 1.5rem; }
-            input, select, button { padding: 12px; font-size: 0.95rem; }
-        }
+        @media (max-width: 480px) { .box { padding: 20px; } h2 { font-size: 1.5rem; } }
     </style>
 </head>
 <body>
@@ -114,7 +36,7 @@
     <form id="loginForm">
         <input type="email" id="lEmail" placeholder="E-posta adresi" required>
         <input type="password" id="lPass" placeholder="Şifre" required>
-        <button type="submit">Oturum Aç</button>
+        <button type="submit" id="loginBtn">Oturum Aç</button>
     </form>
 
     <form id="registerForm" class="hidden">
@@ -127,7 +49,7 @@
             <option value="seller">Satıcıyım (Mağaza)</option>
         </select>
         <input type="text" id="rCompany" placeholder="Şirket / Mağaza Adı" class="hidden">
-        <button type="submit">Hesabı Oluştur</button>
+        <button type="submit" id="registerBtn">Hesabı Oluştur</button>
     </form>
 </div>
 
@@ -137,40 +59,35 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     function showForm(t) {
-        if(t === 'login') {
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('registerForm').classList.add('hidden');
-            document.getElementById('t-login').classList.add('active');
-            document.getElementById('t-register').classList.remove('active');
-        } else {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('registerForm').classList.remove('hidden');
-            document.getElementById('t-login').classList.remove('active');
-            document.getElementById('t-register').classList.add('active');
-        }
+        document.getElementById('loginForm').classList.toggle('hidden', t !== 'login');
+        document.getElementById('registerForm').classList.toggle('hidden', t !== 'register');
+        document.getElementById('t-login').classList.toggle('active', t === 'login');
+        document.getElementById('t-register').classList.toggle('active', t === 'register');
     }
 
     function checkRole() {
         const isSeller = document.getElementById('rRole').value === 'seller';
         const companyInput = document.getElementById('rCompany');
-        if(isSeller) {
-            companyInput.classList.remove('hidden');
-            companyInput.required = true;
-        } else {
-            companyInput.classList.add('hidden');
-            companyInput.required = false;
-        }
+        companyInput.classList.toggle('hidden', !isSeller);
+        companyInput.required = isSeller;
     }
 
     // KAYIT İŞLEMİ
     document.getElementById('registerForm').onsubmit = async (e) => {
         e.preventDefault();
+        const btn = document.getElementById('registerBtn');
+        btn.innerText = "İşleniyor...";
+        
         const email = document.getElementById('rEmail').value;
         const password = document.getElementById('rPass').value;
 
         const { data, error } = await supabaseClient.auth.signUp({ email, password });
 
-        if (error) return alert("Kayıt Hatası: " + error.message);
+        if (error) {
+            alert("Kayıt Hatası: " + error.message);
+            btn.innerText = "Hesabı Oluştur";
+            return;
+        }
 
         const { error: pErr } = await supabaseClient.from('profiles').insert([{
             id: data.user.id,
@@ -182,22 +99,43 @@
 
         if (pErr) alert("Profil Hatası: " + pErr.message);
         else {
-            alert("Kayıt başarılı! Giriş yapabilirsiniz.");
+            alert("Kayıt başarılı! Şimdi giriş yapabilirsiniz.");
             showForm('login');
         }
+        btn.innerText = "Hesabı Oluştur";
     };
 
-    // GİRİŞ İŞLEMİ
+    // GİRİŞ İŞLEMİ (AKILLI YÖNLENDİRME)
     document.getElementById('loginForm').onsubmit = async (e) => {
         e.preventDefault();
+        const btn = document.getElementById('loginBtn');
+        btn.innerText = "Giriş yapılıyor...";
+
         const email = document.getElementById('lEmail').value;
         const password = document.getElementById('lPass').value;
 
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         
-        if (error) alert("Giriş Hatası: " + error.message);
-        else {
-            window.location.href = 'dokuzfenaeticaretsitesi.html';
+        if (error) {
+            alert("Giriş Hatası: " + error.message);
+            btn.innerText = "Oturum Aç";
+        } else {
+            // Kullanıcı profilinden rolü kontrol et
+            const { data: profile, error: pErr } = await supabaseClient
+                .from('profiles')
+                .select('role')
+                .eq('id', data.user.id)
+                .single();
+
+            if (pErr) {
+                window.location.href = 'dokuzfenaeticaretsitesi.html';
+            } else {
+                if (profile.role === 'seller') {
+                    window.location.href = 'dokuzfenaeticaretsaticipaneli.html';
+                } else {
+                    window.location.href = 'dokuzfenaeticaretsitesi.html';
+                }
+            }
         }
     };
 </script>
