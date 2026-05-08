@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satıcı Yönetim Merkezi | Dokuz FEN A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #000; --danger: #ef4444; --success: #22c55e; --border: #e5e7eb; --bg: #f9fafb; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: #111827; display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--primary); color: white; padding: 30px 20px; display: flex; flex-direction: column; }
+        .sidebar h2 { font-size: 1.2rem; margin-bottom: 40px; letter-spacing: -1px; }
+        .nav-item { padding: 12px 15px; color: #9ca3af; text-decoration: none; border-radius: 8px; margin-bottom: 5px; transition: 0.3s; cursor: pointer; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+
+        /* Main Content */
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        /* Stats Box */
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+        .stat-card span { display: block; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px; }
+        .stat-card strong { font-size: 1.5rem; }
+
+        /* Product Form Section */
+        .panel-section { background: white; padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
+        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-top: 5px; }
+        .full-width { grid-column: 1 / -1; }
+        button.btn-primary { background: var(--primary); color: white; border: none; padding: 15px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+
+        /* Product List Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; padding: 15px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .stock-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .btn-delete { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 1rem; }
+
+        @media (max-width: 768px) { body { flex-direction: column; } .sidebar { width: 100%; } }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <h2>DOKUZ FEN A Panel</h2>
+    <div class="nav-item active"><i class="fa-solid fa-box"></i> &nbsp; Ürünlerim</div>
+    <div class="nav-item"><i class="fa-solid fa-chart-line"></i> &nbsp; Satışlar</div>
+    <div class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> &nbsp; Çıkış Yap</div>
+</aside>
+
+<main class="main-content">
+    <div class="header">
+        <h1>Mağaza Yönetimi</h1>
+        <div id="sellerName" style="font-weight: 600;">Yükleniyor...</div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card"><span>Toplam Ürün</span><strong id="countTotal">0</strong></div>
+        <div class="stat-card"><span>Kritik Stok</span><strong id="countLowStock" style="color:var(--danger)">0</strong></div>
+        <div class="stat-card"><span>Mağaza Puanı</span><strong>9.8</strong></div>
+    </div>
+
+    <div class="panel-section">
+        <h3>+ Yeni Ürün Ekle</h3>
+        <form id="productForm" class="grid-form">
+            <div><label>Ürün Adı</label><input type="text" id="pName" placeholder="Örn: Kablosuz Mouse" required></div>
+            <div><label>Fiyat (TL)</label><input type="number" id="pPrice" placeholder="0.00" required></div>
+            <div><label>Stok Adedi</label><input type="number" id="pStock" placeholder="Kaç adet var?" required></div>
+            <div><label>Kategori</label>
+                <select id="pCat">
+                    <option value="Elektronik">Elektronik</option>
+                    <option value="Hobi">Hobi</option>
+                    <option value="Moda">Moda</option>
+                    <option value="Ev/Yaşam">Ev/Yaşam</option>
+                </select>
+            </div>
+            <div class="full-width"><label>Açıklama</label><textarea id="pDesc" rows="3" placeholder="Ürün detaylarını yazın..."></textarea></div>
+            <div class="full-width"><label>Görsel URL</label><input type="text" id="pImg" placeholder="https://..."></div>
+            <button type="submit" class="btn-primary">Ürünü Vitrine Koy</button>
+        </form>
+    </div>
+
+    <div class="panel-section">
+        <h3>Envanteriniz</h3>
+        <table id="inventoryTable">
+            <thead>
+                <tr>
+                    <th>Ürün</th>
+                    <th>Fiyat</th>
+                    <th>Stok</th>
+                    <th>Kategori</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryBody">
+                </tbody>
+        </table>
+    </div>
+</main>
+
+<script>
+    const SUPABASE_URL = 'https://acxxlnnwwlujixymjane.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentUserId = null;
+
+    // 1. Kullanıcı Kontrolü ve Verileri Başlatma
+    async function init() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) {
+            window.location.href = 'auth.html';
+            return;
+        }
+        currentUserId = user.id;
+        
+        // Satıcı profil bilgisini çek
+        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUserId).single();
+        document.getElementById('sellerName').innerText = profile.company_name || profile.full_name;
+
+        loadInventory();
+    }
+
+    // 2. Envanteri Listeleme ve Silme Fonksiyonu
+    async function loadInventory() {
+        const { data, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('seller_id', currentUserId)
+            .order('created_at', { ascending: false });
+
+        const body = document.getElementById('inventoryBody');
+        body.innerHTML = '';
+
+        if (data) {
+            document.getElementById('countTotal').innerText = data.length;
+            let lowStockCount = 0;
+
+            data.forEach(p => {
+                if(p.stock < 5) lowStockCount++;
+                const row = `
+                    <tr>
+                        <td><strong>${p.name}</strong></td>
+                        <td>${p.price} TL</td>
+                        <td><span class="stock-badge ${p.stock < 5 ? 'low-stock' : ''}" style="background:${p.stock < 5 ? '#fee2e2' : '#f0fdf4'}; color:${p.stock < 5 ? '#ef4444' : '#22c55e'}">${p.stock} Adet</span></td>
+                        <td>${p.category}</td>
+                        <td><button onclick="deleteProduct('${p.id}')" class="btn-delete"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+                body.innerHTML += row;
+            });
+            document.getElementById('countLowStock').innerText = lowStockCount;
+        }
+    }
+
+    // 3. Ürün Ekleme (Stok ile birlikte)
+    document.getElementById('productForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        btn.innerText = "Yükleniyor...";
+
+        const { error } = await supabaseClient.from('products').insert([{
+            seller_id: currentUserId,
+            name: document.getElementById('pName').value,
+            price: document.getElementById('pPrice').value,
+            stock: document.getElementById('pStock').value, // Stok alanı eklendi
+            category: document.getElementById('pCat').value,
+            description: document.getElementById('pDesc').value,
+            image_url: document.getElementById('pImg').value
+        }]);
+
+        if (error) alert("Hata: " + error.message);
+        else {
+            alert("Ürün başarıyla eklendi!");
+            document.getElementById('productForm').reset();
+            loadInventory();
+        }
+        btn.innerText = "Ürünü Vitrine Koy";
+    };
+
+    // 4. Ürün Silme
+    async function deleteProduct(id) {
+        if (confirm('Bu ürünü kalıcı olarak silmek istediğinize emin misiniz?')) {
+            const { error } = await supabaseClient.from('products').delete().eq('id', id);
+            if (error) alert("Silme hatası: " + error.message);
+            else loadInventory();
+        }
+    }
+
+    function logout() {
+        supabaseClient.auth.signOut().then(() => window.location.href = 'auth.html');
+    }
+
+    init();
+</script>
+</body>
+</html>

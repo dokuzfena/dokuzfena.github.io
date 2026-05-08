@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Giriş / Kayıt | Dokuz FEN A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .box { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .tabs { display: flex; margin-bottom: 25px; border-bottom: 1px solid #eee; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #999; font-weight: 600; }
+        .tab.active { color: #000; border-bottom: 2px solid #000; }
+        form { display: flex; flex-direction: column; gap: 12px; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+        button { padding: 14px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2 style="text-align:center; margin-bottom:20px;">DOKUZ FEN A</h2>
+    <div class="tabs">
+        <div class="tab active" onclick="showForm('login')">Giriş</div>
+        <div class="tab" onclick="showForm('register')">Kayıt</div>
+    </div>
+
+    <form id="loginForm">
+        <input type="email" id="lEmail" placeholder="E-posta" required>
+        <input type="password" id="lPass" placeholder="Şifre" required>
+        <button type="submit">Giriş Yap</button>
+    </form>
+
+    <form id="registerForm" class="hidden">
+        <input type="text" id="rName" placeholder="Ad Soyad" required>
+        <input type="email" id="rEmail" placeholder="E-posta" required>
+        <input type="tel" id="rPhone" placeholder="Telefon (05xx...)" required>
+        <input type="password" id="rPass" placeholder="Şifre" required>
+        <select id="rRole" onchange="checkRole()">
+            <option value="customer">Müşteri</option>
+            <option value="seller">Satıcı</option>
+        </select>
+        <input type="text" id="rCompany" placeholder="Şirket/Mağaza Adı" class="hidden">
+        <button type="submit">Hesap Oluştur</button>
+    </form>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://acxxlnnwwlujixymjane.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function showForm(t) {
+        document.getElementById('loginForm').className = t === 'login' ? '' : 'hidden';
+        document.getElementById('registerForm').className = t === 'register' ? '' : 'hidden';
+        document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', (i === 0 && t === 'login') || (i === 1 && t === 'register')));
+    }
+
+    function checkRole() {
+        const isSeller = document.getElementById('rRole').value === 'seller';
+        document.getElementById('rCompany').classList.toggle('hidden', !isSeller);
+    }
+
+    document.getElementById('registerForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const { data, error } = await supabaseClient.auth.signUp({
+            email: document.getElementById('rEmail').value,
+            password: document.getElementById('rPass').value
+        });
+
+        if (error) return alert(error.message);
+
+        const { error: pErr } = await supabaseClient.from('profiles').insert([{
+            id: data.user.id,
+            full_name: document.getElementById('rName').value,
+            phone: document.getElementById('rPhone').value,
+            role: document.getElementById('rRole').value,
+            company_name: document.getElementById('rCompany').value
+        }]);
+
+        if (pErr) alert(pErr.message);
+        else alert("Kayıt başarılı! Giriş yapabilirsiniz.");
+    };
+
+    document.getElementById('loginForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const { error } = await supabaseClient.auth.signInWithPassword({
+            email: document.getElementById('lEmail').value,
+            password: document.getElementById('lPass').value
+        });
+        if (error) alert(error.message);
+        else window.location.href = 'dokuzfenaeticaretsitesi.html';
+    };
+</script>
+</body>
+</html>
