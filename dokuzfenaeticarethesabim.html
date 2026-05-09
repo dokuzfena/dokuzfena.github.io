@@ -7,42 +7,41 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --accent: #0071e3; }
+        :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --accent: #0071e3; --error: #ff3b30; --success: #34c759; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--primary); }
+        body { background: var(--bg); color: var(--primary); padding-bottom: 50px; }
 
         .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
         h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 30px; letter-spacing: -1.5px; }
 
         .card { background: var(--secondary); border-radius: 28px; padding: 35px; margin-bottom: 25px; position: relative; }
         
-        /* Sekme Menüsü */
         .tab-menu { display: flex; gap: 25px; margin-bottom: 30px; border-bottom: 1px solid var(--secondary); }
         .tab-item { cursor: pointer; font-weight: 600; color: #86868b; padding-bottom: 10px; transition: 0.2s; }
         .tab-item.active { color: #000; border-bottom: 2px solid #000; }
 
-        /* Bilgi Grupları */
         .info-group { margin-bottom: 25px; }
         .label { font-size: 0.8rem; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 6px; display: block; }
         .value { font-size: 1.15rem; font-weight: 600; min-height: 24px; }
         
-        /* Düzenleme Modu Inputları */
         input, textarea {
             width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
-            font-size: 1rem; margin-top: 5px; display: none; /* Varsayılan gizli */
+            font-size: 1rem; margin-top: 5px; display: none;
         }
 
-        /* Butonlar */
         .btn { padding: 12px 24px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; border: none; font-size: 0.9rem; }
         .btn-edit { background: var(--primary); color: #fff; margin-bottom: 20px; }
-        .btn-save { background: #34c759; color: #fff; display: none; margin-right: 10px; }
-        .btn-cancel { background: #ff3b30; color: #fff; display: none; }
+        .btn-save { background: var(--success); color: #fff; display: none; margin-right: 10px; }
+        .btn-cancel { background: var(--error); color: #fff; display: none; }
         
-        .logout { color: #ff3b30; font-weight: 700; cursor: pointer; display: block; margin-top: 40px; }
+        /* Şifre Bölümü Stili */
+        .password-section { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 25px; }
+        .pw-input { display: block !important; margin-bottom: 15px; background: #fff; }
         
-        /* Düzenleme Modu Aktifken */
+        .logout { color: var(--error); font-weight: 700; cursor: pointer; display: block; margin-top: 40px; }
+        
         .editing .value { display: none; }
-        .editing input, .editing textarea { display: block; }
+        .editing input:not(.pw-input), .editing textarea { display: block; }
         .editing .btn-save, .editing .btn-cancel { display: inline-block; }
         .editing .btn-edit { display: none; }
     </style>
@@ -75,6 +74,19 @@
                 <span class="label">Telefon</span>
                 <div class="value" id="view_phone">Henüz eklenmedi</div>
                 <input type="text" id="input_phone">
+            </div>
+
+            <div class="password-section">
+                <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Şifre Değiştir</h3>
+                <div class="info-group">
+                    <span class="label">Yeni Şifre</span>
+                    <input type="password" id="new_pw" class="pw-input" placeholder="Yeni şifre girin">
+                </div>
+                <div class="info-group">
+                    <span class="label">Yeni Şifre (Tekrar)</span>
+                    <input type="password" id="confirm_pw" class="pw-input" placeholder="Yeni şifreyi onaylayın">
+                </div>
+                <button class="btn btn-primary" style="background: #000; color: #fff; width: 100%;" onclick="changePassword()">Şifreyi Güncelle</button>
             </div>
         </div>
 
@@ -112,16 +124,45 @@
 
         const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
         
-        // Görünüm (View) Modunu Doldur
         document.getElementById('view_name').innerText = profile.full_name || "İsimsiz";
         document.getElementById('view_email').innerText = user.email;
         document.getElementById('view_phone').innerText = profile.phone || "Ekle";
         document.getElementById('view_address').innerText = profile.company_name || "Eklenmemiş";
 
-        // Inputları Doldur (Düzenleme için hazırlık)
         document.getElementById('input_name').value = profile.full_name || "";
         document.getElementById('input_phone').value = profile.phone || "";
         document.getElementById('input_address').value = profile.company_name || "";
+    }
+
+    // Şifre Değiştirme Fonksiyonu
+    async function changePassword() {
+        const newPw = document.getElementById('new_pw').value;
+        const confirmPw = document.getElementById('confirm_pw').value;
+
+        if (!newPw || !confirmPw) {
+            alert("Lütfen tüm şifre alanlarını doldurun.");
+            return;
+        }
+
+        if (newPw !== confirmPw) {
+            alert("Yeni şifreler birbiriyle eşleşmiyor!");
+            return;
+        }
+
+        if (newPw.length < 6) {
+            alert("Şifre en az 6 karakter olmalıdır.");
+            return;
+        }
+
+        const { error } = await supabaseClient.auth.updateUser({ password: newPw });
+
+        if (error) {
+            alert("Şifre güncellenirken hata oluştu: " + error.message);
+        } else {
+            alert("Şifreniz başarıyla değiştirildi!");
+            document.getElementById('new_pw').value = "";
+            document.getElementById('confirm_pw').value = "";
+        }
     }
 
     function toggleEdit(isEditing) {
@@ -161,7 +202,7 @@
         if(type === 'adres') document.getElementById('t2').classList.add('active');
         if(type === 'siparis') document.getElementById('t3').classList.add('active');
         
-        toggleEdit(false); // Sekme değiştirince düzenleme modunu kapat
+        toggleEdit(false);
     }
 
     async function logout() {
