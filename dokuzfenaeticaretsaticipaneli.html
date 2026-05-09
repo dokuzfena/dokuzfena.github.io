@@ -15,13 +15,14 @@
             --text-secondary: #86868b;
             --radius-lg: 20px;
             --radius-md: 14px;
+            --accent: #0071e3;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; }
         
         body { background: var(--bg); color: var(--primary); display: flex; min-height: 100vh; }
 
-        /* Sidebar - Masaüstü */
+        /* Sidebar */
         .sidebar { 
             width: 260px; background: var(--sidebar-bg); padding: 40px 20px; 
             display: flex; flex-direction: column; position: fixed; height: 100vh;
@@ -38,8 +39,8 @@
 
         h1 { font-size: 2rem; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; }
 
-        /* Form Elemanları */
-        .card { background: #fff; padding: 25px; border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 25px; }
+        /* Kartlar */
+        .card { background: #fff; padding: 25px; border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 25px; position: relative; }
         .input-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 6px; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
         
@@ -47,7 +48,6 @@
             width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-md); 
             outline: none; font-size: 0.95rem; background: #fafafa; transition: 0.2s;
         }
-        textarea { resize: vertical; min-height: 100px; }
         input:focus, textarea:focus { border-color: var(--primary); background: #fff; }
 
         .btn-primary { 
@@ -55,7 +55,7 @@
             border-radius: var(--radius-md); cursor: pointer; font-weight: 700; width: 100%;
         }
 
-        /* Navigasyon Butonları */
+        /* Navigasyon */
         .nav-btn { 
             width: 100%; padding: 14px; margin-bottom: 6px; border: none; background: transparent; 
             text-align: left; cursor: pointer; border-radius: var(--radius-md); font-weight: 600;
@@ -63,25 +63,23 @@
         }
         .nav-btn.active { background: var(--primary); color: #fff; }
 
-        /* MOBİL UYUMLULUK AYARLARI */
+        /* Sipariş İşlem Butonları */
+        .status-badge { display: inline-block; padding: 5px 12px; background: #f5f5f7; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: var(--accent); }
+        .action-group { display: flex; gap: 10px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
+        .btn-status { flex: 1; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .btn-ship { background: var(--primary); color: #fff; border: none; }
+        .btn-deliver { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+        .btn-status:hover { opacity: 0.8; }
+
         @media (max-width: 768px) {
-            .sidebar { 
-                width: 100%; height: 70px; flex-direction: row; bottom: 0; top: auto; 
-                padding: 10px 5%; border-right: none; border-top: 1px solid var(--border);
-                justify-content: space-around; align-items: center;
-            }
-            .sidebar h2, .logout-btn span { display: none; }
-            .nav-btn { width: auto; padding: 10px; margin-bottom: 0; flex-direction: column; gap: 4px; font-size: 0.7rem; }
-            .nav-btn span { display: block; }
+            .sidebar { width: 100%; height: 70px; flex-direction: row; bottom: 0; top: auto; padding: 10px 5%; border-right: none; border-top: 1px solid var(--border); justify-content: space-around; }
+            .sidebar h2 { display: none; }
+            .nav-btn { width: auto; padding: 10px; flex-direction: column; font-size: 0.7rem; }
             .main-content { margin-left: 0; padding: 20px 5% 100px 5%; }
-            h1 { font-size: 1.6rem; }
-            .flex-mobile { flex-direction: column; gap: 0 !important; }
         }
 
-        /* Tablo */
-        .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px; border-bottom: 2px solid var(--secondary); font-size: 0.8rem; color: var(--text-secondary); }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid #f5f5f7; font-size: 0.8rem; color: var(--text-secondary); }
         td { padding: 15px 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
     </style>
 </head>
@@ -91,7 +89,7 @@
     <h2>DOKUZ FEN A</h2>
     <button class="nav-btn active" id="btn-products" onclick="showSection('products')">📦 <span>Ürünlerim</span></button>
     <button class="nav-btn" id="btn-sales" onclick="showSection('sales')">💰 <span>Satışlar</span></button>
-    <button class="nav-btn logout-btn" onclick="handleLogout()">🚪 <span>Çıkış</span></button>
+    <button class="nav-btn" onclick="handleLogout()">🚪 <span>Çıkış</span></button>
 </div>
 
 <div class="main-content">
@@ -101,45 +99,27 @@
             <form id="productForm">
                 <div class="input-group">
                     <label>Ürün Adı</label>
-                    <input type="text" id="pName" placeholder="Örn: MacBook Pro M3" required>
+                    <input type="text" id="pName" required>
                 </div>
-                
                 <div class="input-group">
-                    <label>Ürün Görsel URL'si</label>
-                    <input type="url" id="pImg" placeholder="https://resim-linki.com/gorsel.jpg" required>
-                    <small style="font-size: 0.7rem; color: gray;">*Şimdilik bir resim linki yapıştırın.</small>
+                    <label>Görsel URL</label>
+                    <input type="url" id="pImg" required>
                 </div>
-
                 <div class="input-group">
-                    <label>Ürün Açıklaması</label>
-                    <textarea id="pDesc" placeholder="Ürünün özelliklerini, garanti durumunu vb. yazın..." required></textarea>
+                    <label>Açıklama</label>
+                    <textarea id="pDesc" required></textarea>
                 </div>
-
-                <div class="flex-mobile" style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <div style="flex: 1;">
-                        <label>Fiyat (TL)</label>
-                        <input type="number" id="pPrice" placeholder="0" required>
-                    </div>
-                    <div style="flex: 1;">
-                        <label>Stok Adedi</label>
-                        <input type="number" id="pStock" placeholder="1" required>
-                    </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div style="flex: 1;"><label>Fiyat (TL)</label><input type="number" id="pPrice" required></div>
+                    <div style="flex: 1;"><label>Stok</label><input type="number" id="pStock" required></div>
                 </div>
-                <button type="submit" class="btn-primary">Ürünü Vitrine Ekle</button>
+                <button type="submit" class="btn-primary">Ürünü Ekle</button>
             </form>
         </div>
 
-        <div class="table-container">
+        <div class="card" style="padding: 0; overflow: hidden;">
             <table>
-                <thead>
-                    <tr>
-                        <th>Görsel</th>
-                        <th>Ürün</th>
-                        <th>Fiyat</th>
-                        <th>Stok</th>
-                        <th>İşlem</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Ürün</th><th>Fiyat</th><th>Stok</th><th>İşlem</th></tr></thead>
                 <tbody id="productTableBody"></tbody>
             </table>
         </div>
@@ -171,26 +151,58 @@
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id + '-section').classList.add('active');
         document.getElementById('btn-' + id).classList.add('active');
-        if(window.innerWidth <= 768) window.scrollTo(0,0);
+        if(id === 'sales') loadSales();
     }
 
     async function loadProducts() {
         const { data } = await supabaseClient.from('products').select('*').eq('seller_id', userSession.id);
-        const tbody = document.getElementById('productTableBody');
-        tbody.innerHTML = data?.map(p => `
+        document.getElementById('productTableBody').innerHTML = data?.map(p => `
             <tr>
-                <td><img src="${p.image_url}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;" onerror="this.src='https://via.placeholder.com/40'"></td>
                 <td style="font-weight:600;">${p.name}</td>
                 <td>${p.price.toLocaleString()} TL</td>
                 <td>${p.stock}</td>
                 <td><button onclick="deleteProduct('${p.id}')" style="color:#ff3b30; border:none; background:none; font-weight:700; cursor:pointer;">SİL</button></td>
             </tr>
-        `).join('') || '<tr><td colspan="5" style="text-align:center; padding:30px;">Ürün bulunamadı.</td></tr>';
+        `).join('') || '<tr><td colspan="4" style="text-align:center; padding:20px;">Ürün yok.</td></tr>';
+    }
+
+    async function loadSales() {
+        const { data } = await supabaseClient.from('orders').select('*').eq('seller_id', userSession.id).order('created_at', { ascending: false });
+        const container = document.getElementById('salesList');
+        
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align:center; color:#86868b;">Henüz sipariş yok.</div>';
+            return;
+        }
+
+        container.innerHTML = data.map(order => `
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin-bottom:8px;">📦 ${order.product_name}</h3>
+                        <p style="font-size:0.85rem;"><b>Müşteri:</b> ${order.customer_full_name}</p>
+                        <p style="font-size:0.85rem;"><b>Adres:</b> ${order.customer_address}</p>
+                    </div>
+                    <span class="status-badge">${order.status}</span>
+                </div>
+                <div class="action-group">
+                    <button class="btn-status btn-ship" onclick="updateStatus('${order.id}', 'Kargoya Verildi')">Kargoya Verildi</button>
+                    <button class="btn-status btn-deliver" onclick="updateStatus('${order.id}', 'Teslim Edildi')">Teslim Edildi</button>
+                </div>
+                <div style="margin-top:15px; font-weight:800;">${order.total_price.toLocaleString()} TL</div>
+            </div>
+        `).join('');
+    }
+
+    async function updateStatus(orderId, newStatus) {
+        const { error } = await supabaseClient.from('orders').update({ status: newStatus }).eq('id', orderId);
+        if (error) alert("Hata: " + error.message);
+        else loadSales();
     }
 
     document.getElementById('productForm').onsubmit = async (e) => {
         e.preventDefault();
-        const { error } = await supabaseClient.from('products').insert([{
+        await supabaseClient.from('products').insert([{
             seller_id: userSession.id,
             name: document.getElementById('pName').value,
             image_url: document.getElementById('pImg').value,
@@ -198,39 +210,14 @@
             price: document.getElementById('pPrice').value,
             stock: document.getElementById('pStock').value
         }]);
-        
-        if (error) alert("Hata: " + error.message); 
-        else { alert("Ürün başarıyla eklendi!"); loadProducts(); e.target.reset(); }
+        loadProducts(); e.target.reset();
     };
 
     async function deleteProduct(id) {
-        if(confirm("Bu ürünü silmek istiyor musunuz?")) {
-            await supabaseClient.from('products').delete().eq('id', id);
-            loadProducts();
-        }
+        if(confirm("Silinsin mi?")) { await supabaseClient.from('products').delete().eq('id', id); loadProducts(); }
     }
 
-    async function loadSales() {
-        const { data } = await supabaseClient.from('orders').select('*').eq('seller_id', userSession.id);
-        const container = document.getElementById('salesList');
-        if (!data || data.length === 0) {
-            container.innerHTML = '<div class="card" style="text-align:center; color:#86868b;"><p>Henüz bir sipariş almadınız.</p></div>';
-            return;
-        }
-        container.innerHTML = data.map(order => `
-            <div class="card">
-                <h3 style="margin-bottom:10px;">📦 ${order.product_name}</h3>
-                <p><b>Müşteri:</b> ${order.customer_full_name}</p>
-                <p><b>Adres:</b> ${order.customer_address}</p>
-                <div style="margin-top:15px; font-weight:800; font-size:1.2rem;">${order.total_price} TL</div>
-            </div>
-        `).join('');
-    }
-
-    async function handleLogout() {
-        await supabaseClient.auth.signOut();
-        window.location.href = 'dokuzfenaeticaretauth.html';
-    }
+    async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'dokuzfenaeticaretauth.html'; }
 
     init();
 </script>
