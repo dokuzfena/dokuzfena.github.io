@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sepetim | Dokuz FEN A</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --accent: #0071e3; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--primary); }
+
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 5%; }
+        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 30px; letter-spacing: -1.5px; }
+
+        .cart-layout { display: grid; grid-template-columns: 1fr 350px; gap: 40px; }
+        
+        /* Sepet Listesi */
+        .cart-items { display: flex; flex-direction: column; gap: 20px; }
+        .cart-item { 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 20px; border-bottom: 1px solid var(--secondary);
+        }
+        .item-info h3 { font-size: 1.1rem; font-weight: 700; }
+        .item-price { font-weight: 600; color: #1d1d1f; margin-top: 5px; }
+
+        /* Özet Alanı */
+        .summary-card { 
+            background: var(--secondary); border-radius: 24px; padding: 30px; 
+            position: sticky; top: 20px; height: fit-content;
+        }
+        .summary-line { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: 600; }
+        .total-line { border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px; font-size: 1.2rem; font-weight: 800; }
+
+        .btn-checkout { 
+            width: 100%; background: var(--primary); color: #fff; border: none; 
+            padding: 18px; border-radius: 14px; font-weight: 700; cursor: pointer; 
+            margin-top: 20px; transition: 0.2s; font-size: 1rem;
+        }
+        .btn-checkout:hover { opacity: 0.9; transform: scale(1.01); }
+        
+        .remove-btn { color: #ff3b30; cursor: pointer; font-size: 0.8rem; font-weight: 700; border: none; background: none; }
+
+        @media (max-width: 768px) {
+            .cart-layout { grid-template-columns: 1fr; }
+            h1 { font-size: 2rem; }
+            .summary-card { position: static; margin-top: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h1>Sepetim</h1>
+        <a href="dokuzfenaeticaretsitesi.html" style="color: var(--accent); font-weight: 600; text-decoration: none;">← Alışverişe Devam Et</a>
+    </div>
+
+    <div class="cart-layout" id="cart-content">
+        <div class="cart-items" id="cart-list">
+            </div>
+
+        <div class="summary-card">
+            <h2 style="margin-bottom: 20px; font-size: 1.3rem;">Sipariş Özeti</h2>
+            <div class="summary-line">
+                <span>Ara Toplam</span>
+                <span id="subtotal">0 TL</span>
+            </div>
+            <div class="summary-line">
+                <span>Teslimat</span>
+                <span style="color: #34c759;">Ücretsiz</span>
+            </div>
+            <div class="summary-line total-line">
+                <span>Toplam</span>
+                <span id="total">0 TL</span>
+            </div>
+            <button class="btn-checkout" onclick="odemeSayfasinaGit()">Ödeme Adımına Geç</button>
+            <p style="font-size: 0.7rem; color: #86868b; margin-top: 15px; text-align: center;">
+                Bir sonraki adımda kart bilgilerinizi gireceksiniz.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://acxxlnnwwlujixymjane.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let sepet = JSON.parse(localStorage.getItem('dokuzfena_sepet')) || [];
+
+    function sepetiListele() {
+        const list = document.getElementById('cart-list');
+        const content = document.getElementById('cart-content');
+        
+        if (sepet.length === 0) {
+            content.innerHTML = `
+                <div style="text-align: center; padding: 80px 0; grid-column: 1 / -1;">
+                    <p style="font-size: 1.2rem; color: #86868b; margin-bottom: 25px;">Sepetinizde ürün bulunmuyor.</p>
+                    <button class="btn-checkout" style="width: auto; padding: 15px 40px;" onclick="window.location.href='dokuzfenaeticaretsitesi.html'">Alışverişe Başla</button>
+                </div>`;
+            return;
+        }
+
+        let toplam = 0;
+        list.innerHTML = sepet.map((item, index) => {
+            // Fiyatı sayıya çevir (Nokta ve TL yazılarını temizle)
+            const temizFiyat = parseFloat(item.price.replace(/[^\d]/g, ''));
+            toplam += temizFiyat;
+            
+            return `
+                <div class="cart-item">
+                    <div class="item-info">
+                        <h3>${item.name}</h3>
+                        <p class="item-price">${item.price}</p>
+                    </div>
+                    <button class="remove-btn" onclick="urunuKaldir(${index})">KALDIR</button>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('subtotal').innerText = toplam.toLocaleString() + " TL";
+        document.getElementById('total').innerText = toplam.toLocaleString() + " TL";
+    }
+
+    function urunuKaldir(index) {
+        sepet.splice(index, 1);
+        localStorage.setItem('dokuzfena_sepet', JSON.stringify(sepet));
+        sepetiListele();
+    }
+
+    async function odemeSayfasinaGit() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        
+        // 1. Giriş Kontrolü
+        if (!user) {
+            alert("Ödeme yapabilmek için lütfen giriş yapın.");
+            window.location.href = 'dokuzfenaeticaretauth.html';
+            return;
+        }
+
+        // 2. Adres Bilgisi Kontrolü
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('company_name') // Adres bilgisini bu kolonda tutuyoruz
+            .eq('id', user.id)
+            .single();
+
+        if (!profile || !profile.company_name || profile.company_name.trim() === "") {
+            alert("Lütfen ödeme yapmadan önce profilinize bir teslimat adresi ekleyin.");
+            window.location.href = 'dokuzfenahesabim.html';
+            return;
+        }
+
+        // 3. Her şey tamamsa Ödeme Sayfasına yönlendir
+        window.location.href = 'odeme.html';
+    }
+
+    // İlk yükleme
+    sepetiListele();
+</script>
+</body>
+</html>
