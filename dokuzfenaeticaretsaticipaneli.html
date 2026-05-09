@@ -13,124 +13,76 @@
             --sidebar-bg: #fbfbfd; 
             --border: #d2d2d7; 
             --text-secondary: #86868b;
-            --radius-lg: 16px;
-            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-md: 14px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; }
         
         body { background: var(--bg); color: var(--primary); display: flex; min-height: 100vh; }
 
-        /* Sidebar */
+        /* Sidebar - Masaüstü */
         .sidebar { 
-            width: 260px; 
-            background: var(--sidebar-bg); 
-            padding: 40px 20px; 
-            display: flex; 
-            flex-direction: column; 
-            position: fixed; 
-            height: 100vh;
-            border-right: 1px solid rgba(0,0,0,0.05);
-            z-index: 100;
+            width: 260px; background: var(--sidebar-bg); padding: 40px 20px; 
+            display: flex; flex-direction: column; position: fixed; height: 100vh;
+            border-right: 1px solid rgba(0,0,0,0.05); z-index: 100;
         }
-
-        .sidebar h2 { font-weight: 800; font-size: 1.25rem; margin-bottom: 48px; letter-spacing: -0.5px; padding-left: 10px; }
-
-        .nav-btn { 
-            width: 100%; 
-            padding: 14px 16px; 
-            margin-bottom: 6px; 
-            border: none; 
-            background: transparent; 
-            text-align: left; 
-            cursor: pointer; 
-            border-radius: var(--radius-md); 
-            font-weight: 600; 
-            font-size: 0.9rem;
-            color: #1d1d1f;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .nav-btn:hover { background: rgba(0,0,0,0.04); }
-        .nav-btn.active { background: var(--primary); color: #fff; }
-
-        .logout-btn { margin-top: auto; color: #ff3b30; }
-        .logout-btn:hover { background: rgba(255, 59, 48, 0.05); }
+        .sidebar h2 { font-weight: 800; font-size: 1.25rem; margin-bottom: 48px; letter-spacing: -0.5px; }
 
         /* Main Content */
-        .main-content { 
-            margin-left: 260px; 
-            flex: 1; 
-            padding: 60px 5%; 
-            max-width: 1100px;
-        }
+        .main-content { margin-left: 260px; flex: 1; padding: 40px 5%; max-width: 1200px; }
         
-        .section { display: none; animation: slideIn 0.4s ease-out; }
+        .section { display: none; animation: fadeIn 0.3s ease; }
         .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        h1 { font-size: 2rem; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; }
 
-        h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 32px; letter-spacing: -0.8px; }
-
-        /* Cards */
-        .card { 
-            background: #fff; 
-            padding: 30px; 
-            border-radius: var(--radius-lg); 
-            border: 1px solid var(--border); 
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-
-        .input-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        /* Form Elemanları */
+        .card { background: #fff; padding: 25px; border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 25px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
         
-        input { 
-            width: 100%; 
-            padding: 14px; 
-            border: 1.5px solid var(--border); 
-            border-radius: var(--radius-md); 
-            outline: none; 
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            background: #fafafa;
+        input, textarea { 
+            width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-md); 
+            outline: none; font-size: 0.95rem; background: #fafafa; transition: 0.2s;
         }
-
-        input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(0,0,0,0.04); }
+        textarea { resize: vertical; min-height: 100px; }
+        input:focus, textarea:focus { border-color: var(--primary); background: #fff; }
 
         .btn-primary { 
-            background: var(--primary); 
-            color: #fff; 
-            padding: 16px; 
-            border: none; 
-            border-radius: var(--radius-md); 
-            cursor: pointer; 
-            font-weight: 700; 
-            font-size: 0.95rem;
-            transition: all 0.2s;
+            background: var(--primary); color: #fff; padding: 16px; border: none; 
+            border-radius: var(--radius-md); cursor: pointer; font-weight: 700; width: 100%;
         }
 
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-primary:active { transform: translateY(0); }
+        /* Navigasyon Butonları */
+        .nav-btn { 
+            width: 100%; padding: 14px; margin-bottom: 6px; border: none; background: transparent; 
+            text-align: left; cursor: pointer; border-radius: var(--radius-md); font-weight: 600;
+            display: flex; align-items: center; gap: 12px; transition: 0.2s;
+        }
+        .nav-btn.active { background: var(--primary); color: #fff; }
 
-        /* Table */
-        .table-container { overflow-x: auto; margin-top: 10px; }
-        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
-        th { padding: 12px 16px; text-align: left; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
-        td { padding: 16px; background: #fdfdfd; border-top: 1px solid #f2f2f7; border-bottom: 1px solid #f2f2f7; }
-        td:first-child { border-left: 1px solid #f2f2f7; border-radius: 12px 0 0 12px; font-weight: 600; }
-        td:last-child { border-right: 1px solid #f2f2f7; border-radius: 0 12px 12px 0; text-align: right; }
-
-        .status-pill { background: #000; color: #fff; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
-        
+        /* MOBİL UYUMLULUK AYARLARI */
         @media (max-width: 768px) {
-            .sidebar { width: 80px; padding: 20px 10px; }
-            .sidebar h2, .nav-btn span { display: none; }
-            .main-content { margin-left: 80px; padding: 40px 20px; }
+            .sidebar { 
+                width: 100%; height: 70px; flex-direction: row; bottom: 0; top: auto; 
+                padding: 10px 5%; border-right: none; border-top: 1px solid var(--border);
+                justify-content: space-around; align-items: center;
+            }
+            .sidebar h2, .logout-btn span { display: none; }
+            .nav-btn { width: auto; padding: 10px; margin-bottom: 0; flex-direction: column; gap: 4px; font-size: 0.7rem; }
+            .nav-btn span { display: block; }
+            .main-content { margin-left: 0; padding: 20px 5% 100px 5%; }
+            h1 { font-size: 1.6rem; }
+            .flex-mobile { flex-direction: column; gap: 0 !important; }
         }
+
+        /* Tablo */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid var(--secondary); font-size: 0.8rem; color: var(--text-secondary); }
+        td { padding: 15px 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -139,7 +91,7 @@
     <h2>DOKUZ FEN A</h2>
     <button class="nav-btn active" id="btn-products" onclick="showSection('products')">📦 <span>Ürünlerim</span></button>
     <button class="nav-btn" id="btn-sales" onclick="showSection('sales')">💰 <span>Satışlar</span></button>
-    <button class="nav-btn logout-btn" onclick="handleLogout()">🚪 <span>Çıkış Yap</span></button>
+    <button class="nav-btn logout-btn" onclick="handleLogout()">🚪 <span>Çıkış</span></button>
 </div>
 
 <div class="main-content">
@@ -149,30 +101,43 @@
             <form id="productForm">
                 <div class="input-group">
                     <label>Ürün Adı</label>
-                    <input type="text" id="pName" placeholder="Ürün ismini girin..." required>
+                    <input type="text" id="pName" placeholder="Örn: MacBook Pro M3" required>
                 </div>
-                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                
+                <div class="input-group">
+                    <label>Ürün Görsel URL'si</label>
+                    <input type="url" id="pImg" placeholder="https://resim-linki.com/gorsel.jpg" required>
+                    <small style="font-size: 0.7rem; color: gray;">*Şimdilik bir resim linki yapıştırın.</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Ürün Açıklaması</label>
+                    <textarea id="pDesc" placeholder="Ürünün özelliklerini, garanti durumunu vb. yazın..." required></textarea>
+                </div>
+
+                <div class="flex-mobile" style="display: flex; gap: 15px; margin-bottom: 20px;">
                     <div style="flex: 1;">
                         <label>Fiyat (TL)</label>
                         <input type="number" id="pPrice" placeholder="0" required>
                     </div>
                     <div style="flex: 1;">
                         <label>Stok Adedi</label>
-                        <input type="number" id="pStock" placeholder="0" required>
+                        <input type="number" id="pStock" placeholder="1" required>
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" style="width: 100%;">Ürünü Listele</button>
+                <button type="submit" class="btn-primary">Ürünü Vitrine Ekle</button>
             </form>
         </div>
 
         <div class="table-container">
-            <table id="productTable">
+            <table>
                 <thead>
                     <tr>
+                        <th>Görsel</th>
                         <th>Ürün</th>
                         <th>Fiyat</th>
                         <th>Stok</th>
-                        <th></th>
+                        <th>İşlem</th>
                     </tr>
                 </thead>
                 <tbody id="productTableBody"></tbody>
@@ -206,6 +171,7 @@
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id + '-section').classList.add('active');
         document.getElementById('btn-' + id).classList.add('active');
+        if(window.innerWidth <= 768) window.scrollTo(0,0);
     }
 
     async function loadProducts() {
@@ -213,12 +179,13 @@
         const tbody = document.getElementById('productTableBody');
         tbody.innerHTML = data?.map(p => `
             <tr>
-                <td>${p.name}</td>
-                <td>${p.price} TL</td>
-                <td>${p.stock} Adet</td>
-                <td><button onclick="deleteProduct('${p.id}')" style="color:#ff3b30; background:none; border:none; cursor:pointer; font-weight:700; font-size:0.8rem;">SİL</button></td>
+                <td><img src="${p.image_url}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;" onerror="this.src='https://via.placeholder.com/40'"></td>
+                <td style="font-weight:600;">${p.name}</td>
+                <td>${p.price.toLocaleString()} TL</td>
+                <td>${p.stock}</td>
+                <td><button onclick="deleteProduct('${p.id}')" style="color:#ff3b30; border:none; background:none; font-weight:700; cursor:pointer;">SİL</button></td>
             </tr>
-        `).join('') || '<tr><td colspan="4" style="text-align:center; color:#86868b; padding:40px;">Henüz ürün eklenmemiş.</td></tr>';
+        `).join('') || '<tr><td colspan="5" style="text-align:center; padding:30px;">Ürün bulunamadı.</td></tr>';
     }
 
     document.getElementById('productForm').onsubmit = async (e) => {
@@ -226,14 +193,18 @@
         const { error } = await supabaseClient.from('products').insert([{
             seller_id: userSession.id,
             name: document.getElementById('pName').value,
+            image_url: document.getElementById('pImg').value,
+            description: document.getElementById('pDesc').value,
             price: document.getElementById('pPrice').value,
             stock: document.getElementById('pStock').value
         }]);
-        if (error) alert(error.message); else { loadProducts(); e.target.reset(); }
+        
+        if (error) alert("Hata: " + error.message); 
+        else { alert("Ürün başarıyla eklendi!"); loadProducts(); e.target.reset(); }
     };
 
     async function deleteProduct(id) {
-        if(confirm("Bu ürünü silmek istediğinize emin misiniz?")) {
+        if(confirm("Bu ürünü silmek istiyor musunuz?")) {
             await supabaseClient.from('products').delete().eq('id', id);
             loadProducts();
         }
@@ -248,18 +219,10 @@
         }
         container.innerHTML = data.map(order => `
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
-                    <div style="flex: 1;">
-                        <h3 style="margin-bottom:12px; font-size:1.1rem;">📦 ${order.product_name}</h3>
-                        <p style="font-size:0.85rem; margin-bottom:4px;">👤 <b>Alıcı:</b> ${order.customer_full_name}</p>
-                        <p style="font-size:0.85rem; margin-bottom:4px;">📍 <b>Adres:</b> ${order.customer_address}</p>
-                        <p style="font-size:0.85rem;">📞 <b>Tel:</b> ${order.customer_phone}</p>
-                    </div>
-                    <div style="text-align:right">
-                        <span class="status-pill">${order.status}</span>
-                        <h2 style="margin-top:15px; font-weight:800;">${order.total_price} TL</h2>
-                    </div>
-                </div>
+                <h3 style="margin-bottom:10px;">📦 ${order.product_name}</h3>
+                <p><b>Müşteri:</b> ${order.customer_full_name}</p>
+                <p><b>Adres:</b> ${order.customer_address}</p>
+                <div style="margin-top:15px; font-weight:800; font-size:1.2rem;">${order.total_price} TL</div>
             </div>
         `).join('');
     }
