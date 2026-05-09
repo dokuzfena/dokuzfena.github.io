@@ -5,212 +5,189 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hesabım | Dokuz FEN A</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --accent: #0071e3; --error: #ff3b30; --success: #34c759; }
+        :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --accent: #0071e3; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--primary); }
+        body { background: var(--bg); color: var(--primary); display: flex; min-height: 100vh; }
 
-        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
-        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 30px; letter-spacing: -1.5px; }
-
-        .card { background: var(--secondary); border-radius: 28px; padding: 35px; margin-bottom: 25px; position: relative; }
+        /* Yan Menü (Sidebar) */
+        .sidebar { width: 280px; background: var(--secondary); padding: 40px 20px; display: flex; flex-direction: column; border-right: 1px solid rgba(0,0,0,0.05); }
+        .sidebar h2 { font-weight: 800; font-size: 1.2rem; margin-bottom: 40px; letter-spacing: -1px; }
         
-        .tab-menu { display: flex; gap: 25px; margin-bottom: 30px; border-bottom: 1px solid var(--secondary); }
-        .tab-item { cursor: pointer; font-weight: 600; color: #86868b; padding-bottom: 10px; transition: 0.2s; }
-        .tab-item.active { color: #000; border-bottom: 2px solid #000; }
-
-        .info-group { margin-bottom: 25px; }
-        .label { font-size: 0.8rem; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 6px; display: block; }
-        .value { font-size: 1.15rem; font-weight: 600; min-height: 24px; }
-        
-        input, textarea {
-            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
-            font-size: 1rem; margin-top: 5px; display: none; background: #fff;
+        .nav-btn { 
+            width: 100%; padding: 14px 18px; margin-bottom: 8px; border: none; background: transparent; 
+            text-align: left; cursor: pointer; border-radius: 12px; font-weight: 600; font-size: 0.95rem;
+            display: flex; align-items: center; gap: 12px; transition: 0.2s;
         }
+        .nav-btn.active { background: var(--primary); color: #fff; }
+        .nav-btn:hover:not(.active) { background: rgba(0,0,0,0.05); }
 
-        .btn { padding: 12px 24px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; border: none; font-size: 0.9rem; }
-        .btn-edit { background: var(--primary); color: #fff; margin-bottom: 20px; }
-        .btn-save { background: var(--success); color: #fff; display: none; margin-right: 10px; }
-        .btn-cancel { background: var(--error); color: #fff; display: none; }
-        
-        .password-section { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 20px; display: none; }
-        .editing .password-section { display: block; }
+        /* Ana İçerik Alanı */
+        .main-content { flex: 1; padding: 60px 8%; max-width: 1000px; }
+        .section { display: none; animation: fadeIn 0.3s ease; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .logout { color: var(--error); font-weight: 700; cursor: pointer; display: block; margin-top: 40px; }
-        
-        .editing .value { display: none; }
-        .editing input, .editing textarea { display: block; }
-        .editing .btn-save, .editing .btn-cancel { display: inline-block; }
-        .editing .btn-edit { display: none; }
+        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 35px; letter-spacing: -1.5px; }
+
+        /* Kartlar ve Formlar */
+        .card { background: #fff; padding: 30px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-size: 0.75rem; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 8px; }
+        input, textarea { width: 100%; padding: 15px; border-radius: 12px; border: 1.5px solid var(--border); font-size: 1rem; outline: none; background: #fafafa; }
+        input:focus { border-color: var(--primary); background: #fff; }
+
+        .btn-save { background: var(--primary); color: #fff; border: none; padding: 16px 30px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-save:hover { opacity: 0.9; }
+
+        /* Sipariş Kartı Tasarımı */
+        .order-card { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 20px; border: 1px solid #eee; border-radius: 16px; margin-bottom: 15px;
+        }
+        .order-status { padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; background: #e8f5e9; color: #2e7d32; text-transform: uppercase; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; padding: 20px; border-right: none; border-bottom: 1px solid #eee; }
+            .main-content { padding: 30px 20px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Hesabım</h1>
+<div class="sidebar">
+    <h2>DOKUZ FEN A</h2>
+    <button class="nav-btn active" id="btn-profile" onclick="showSection('profile')">👤 Profilim</button>
+    <button class="nav-btn" id="btn-orders" onclick="showSection('orders')">📦 Siparişlerim</button>
+    <button class="nav-btn" id="btn-security" onclick="showSection('security')">🔒 Güvenlik</button>
+    <button class="nav-btn" onclick="window.location.href='dokuzfenaeticaretsitesi.html'" style="margin-top: auto; color: var(--accent);">← Mağazaya Dön</button>
+</div>
 
-    <div class="tab-menu">
-        <div class="tab-item active" id="t1" onclick="switchTab('profil')">Profil</div>
-        <div class="tab-item" id="t2" onclick="switchTab('adres')">Adres</div>
-        <div class="tab-item" id="t3" onclick="switchTab('siparis')">Siparişlerim</div>
-    </div>
-
-    <div id="settings-content" class="card">
-        <button class="btn btn-edit" id="edit-btn" onclick="toggleEdit(true)">✏️ Bilgileri Düzenle</button>
-        
-        <div id="profil-fields">
-            <div class="info-group">
-                <span class="label">Ad Soyad</span>
-                <div class="value" id="view_name">...</div>
-                <input type="text" id="input_name">
-            </div>
-            <div class="info-group">
-                <span class="label">E-posta</span>
-                <div class="value" id="view_email" style="color: #86868b;">...</div>
-            </div>
-            <div class="info-group">
-                <span class="label">Telefon</span>
-                <div class="value" id="view_phone">Henüz eklenmedi</div>
-                <input type="text" id="input_phone">
-            </div>
-
-            <div class="password-section">
-                <h3 style="font-size: 1rem; margin-bottom: 15px;">Güvenlik: Şifre Değiştir</h3>
-                <div class="info-group">
-                    <span class="label">Mevcut Şifre</span>
-                    <input type="password" id="old_pass" placeholder="Mevcut şifreniz">
+<div class="main-content">
+    <div id="profile-section" class="section active">
+        <h1>Profil Bilgileri</h1>
+        <div class="card">
+            <form id="profileForm">
+                <div class="input-group">
+                    <label>Ad Soyad</label>
+                    <input type="text" id="fullName" placeholder="Adınız Soyadınız">
                 </div>
-                <div class="info-group">
-                    <span class="label">Yeni Şifre</span>
-                    <input type="password" id="new_pass" placeholder="En az 6 karakter">
+                <div class="input-group">
+                    <label>Telefon</label>
+                    <input type="tel" id="phone" placeholder="05xx xxx xx xx">
                 </div>
-                <div class="info-group">
-                    <span class="label">Yeni Şifre (Tekrar)</span>
-                    <input type="password" id="new_pass_confirm" placeholder="Yeni şifreyi tekrarla">
+                <div class="input-group">
+                    <label>Teslimat Adresi</label>
+                    <textarea id="address" placeholder="Açık adresinizi buraya yazın..."></textarea>
                 </div>
-            </div>
-        </div>
-
-        <div id="adres-fields" style="display: none;">
-            <div class="info-group">
-                <span class="label">Kayıtlı Adres</span>
-                <div class="value" id="view_address">Adres eklenmemiş.</div>
-                <textarea id="input_address" rows="4"></textarea>
-            </div>
-        </div>
-
-        <div id="siparis-fields" style="display: none;">
-            <p>Henüz bir siparişiniz bulunmuyor.</p>
-        </div>
-
-        <div class="edit-controls">
-            <button class="btn btn-save" onclick="saveData()">✅ Değişiklikleri Kaydet</button>
-            <button class="btn btn-cancel" onclick="toggleEdit(false)">❌ İptal</button>
+                <button type="submit" class="btn-save">Değişiklikleri Kaydet</button>
+            </form>
         </div>
     </div>
 
-    <span class="logout" onclick="logout()">Oturumu Kapat</span>
+    <div id="orders-section" class="section">
+        <h1>Siparişlerim</h1>
+        <div id="ordersList">
+            <p style="color:#86868b;">Yükleniyor...</p>
+        </div>
+    </div>
+
+    <div id="security-section" class="section">
+        <h1>Güvenlik Ayarları</h1>
+        <div class="card">
+            <div class="input-group">
+                <label>Yeni Şifre</label>
+                <input type="password" id="newPassword" placeholder="••••••••">
+            </div>
+            <button class="btn-save" onclick="sifreGuncelle()">Şifreyi Güncelle</button>
+        </div>
+    </div>
 </div>
 
 <script>
     const SUPABASE_URL = 'https://acxxlnnwwlujixymjane.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let userId = null;
-    let userEmail = "";
 
-    async function loadUser() {
+    async function init() {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) { window.location.href = 'dokuzfenaeticaretauth.html'; return; }
-        userId = user.id;
-        userEmail = user.email;
-
-        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
         
-        document.getElementById('view_name').innerText = profile.full_name || "İsimsiz";
-        document.getElementById('view_email').innerText = userEmail;
-        document.getElementById('view_phone').innerText = profile.phone || "Eklenmedi";
-        document.getElementById('view_address').innerText = profile.company_name || "Eklenmemiş";
-
-        document.getElementById('input_name').value = profile.full_name || "";
-        document.getElementById('input_phone').value = profile.phone || "";
-        document.getElementById('input_address').value = profile.company_name || "";
-    }
-
-    function toggleEdit(isEditing) {
-        const card = document.getElementById('settings-content');
-        if (isEditing) card.classList.add('editing');
-        else {
-            card.classList.remove('editing');
-            // Şifre kutularını temizle
-            document.getElementById('old_pass').value = "";
-            document.getElementById('new_pass').value = "";
-            document.getElementById('new_pass_confirm').value = "";
+        // Profil Verilerini Getir
+        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+        if (profile) {
+            document.getElementById('fullName').value = profile.full_name || '';
+            document.getElementById('phone').value = profile.phone || '';
+            document.getElementById('address').value = profile.company_name || ''; // Adres burada tutuluyor
         }
     }
 
-    async function saveData() {
-        const newName = document.getElementById('input_name').value;
-        const newPhone = document.getElementById('input_phone').value;
-        const newAddress = document.getElementById('input_address').value;
+    function showSection(sectionId) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         
-        const oldPass = document.getElementById('old_pass').value;
-        const newPass = document.getElementById('new_pass').value;
-        const newPassConfirm = document.getElementById('new_pass_confirm').value;
+        document.getElementById(sectionId + '-section').classList.add('active');
+        document.getElementById('btn-' + sectionId).classList.add('active');
 
-        // 1. ADIM: Profil Bilgilerini Güncelle
-        const { error: profileError } = await supabaseClient.from('profiles').update({
-            full_name: newName,
-            phone: newPhone,
-            company_name: newAddress
-        }).eq('id', userId);
+        if(sectionId === 'orders') siparisleriYukle();
+    }
 
-        if (profileError) { alert("Profil hatası: " + profileError.message); return; }
+    async function siparisleriYukle() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const container = document.getElementById('ordersList');
 
-        // 2. ADIM: Şifre Değiştirme (Eğer kutular dolysa)
-        if (oldPass || newPass || newPassConfirm) {
-            if (newPass !== newPassConfirm) { alert("Yeni şifreler eşleşmiyor!"); return; }
-            if (newPass.length < 6) { alert("Yeni şifre en az 6 karakter olmalı!"); return; }
+        const { data: orders, error } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('customer_id', user.id)
+            .order('created_at', { ascending: false });
 
-            // Önce mevcut şifreyle giriş yapmayı deneyerek doğrula
-            const { error: loginError } = await supabaseClient.auth.signInWithPassword({
-                email: userEmail,
-                password: oldPass
-            });
-
-            if (loginError) { alert("Mevcut şifreniz hatalı!"); return; }
-
-            // Şifreyi güncelle
-            const { error: passError } = await supabaseClient.auth.updateUser({ password: newPass });
-            if (passError) { alert("Şifre güncellenemedi: " + passError.message); return; }
-            
-            alert("Bilgileriniz ve şifreniz başarıyla güncellendi!");
-        } else {
-            alert("Profil bilgileriniz güncellendi!");
+        if (error || !orders || orders.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align:center; color:#86868b;">Henüz bir siparişiniz bulunmuyor.</div>';
+            return;
         }
 
-        toggleEdit(false);
-        loadUser();
+        container.innerHTML = orders.map(order => `
+            <div class="order-card">
+                <div>
+                    <h3 style="font-size:1rem; margin-bottom:5px;">${order.product_name}</h3>
+                    <p style="font-size:0.8rem; color:#86868b;">${new Date(order.created_at).toLocaleDateString('tr-TR')}</p>
+                </div>
+                <div style="text-align:right;">
+                    <div class="order-status">${order.status}</div>
+                    <p style="margin-top:10px; font-weight:800;">${order.total_price.toLocaleString()} TL</p>
+                </div>
+            </div>
+        `).join('');
     }
 
-    function switchTab(type) {
-        document.getElementById('profil-fields').style.display = type === 'profil' ? 'block' : 'none';
-        document.getElementById('adres-fields').style.display = type === 'adres' ? 'block' : 'none';
-        document.getElementById('siparis-fields').style.display = type === 'siparis' ? 'block' : 'none';
-        document.getElementById('edit-btn').style.display = type === 'siparis' ? 'none' : 'block';
+    document.getElementById('profileForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         
-        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-        document.getElementById(type === 'profil' ? 't1' : type === 'adres' ? 't2' : 't3').classList.add('active');
-        toggleEdit(false);
+        const { error } = await supabaseClient.from('profiles').upsert({
+            id: user.id,
+            full_name: document.getElementById('fullName').value,
+            phone: document.getElementById('phone').value,
+            company_name: document.getElementById('address').value // Adres
+        });
+
+        if (error) alert("Hata: " + error.message);
+        else alert("Profil bilgileriniz güncellendi!");
+    };
+
+    async function sifreGuncelle() {
+        const newPass = document.getElementById('newPassword').value;
+        if(newPass.length < 6) { alert("Şifre en az 6 karakter olmalıdır."); return; }
+        
+        const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+        if (error) alert("Hata: " + error.message);
+        else alert("Şifreniz başarıyla güncellendi!");
     }
 
-    async function logout() {
-        await supabaseClient.auth.signOut();
-        window.location.href = 'dokuzfenaeticaretsitesi.html';
-    }
-
-    loadUser();
+    init();
 </script>
 </body>
 </html>
