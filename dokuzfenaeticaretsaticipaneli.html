@@ -45,6 +45,7 @@
             width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-md); 
             outline: none; font-size: 0.95rem; background: #fafafa; transition: 0.2s;
         }
+        input:focus, textarea:focus { border-color: var(--primary); background: #fff; }
 
         .btn-primary { 
             background: var(--primary); color: #fff; padding: 16px; border: none; 
@@ -60,12 +61,19 @@
 
         .status-badge { display: inline-block; padding: 5px 12px; background: #f5f5f7; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: var(--accent); }
         .action-group { display: flex; gap: 10px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
-        .btn-status { flex: 1; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.8rem; }
+        .btn-status { flex: 1; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
         .btn-ship { background: var(--primary); color: #fff; border: none; }
         .btn-deliver { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
         
         .stock-input { width: 60px !important; padding: 5px !important; font-size: 0.8rem !important; margin: 0 5px; }
         .btn-stock { padding: 6px 10px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 0.7rem; cursor: pointer; }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; height: 70px; flex-direction: row; bottom: 0; top: auto; padding: 10px 5%; border-right: none; border-top: 1px solid var(--border); justify-content: space-around; }
+            .sidebar h2 { display: none; }
+            .nav-btn { width: auto; padding: 10px; flex-direction: column; font-size: 0.7rem; }
+            .main-content { margin-left: 0; padding: 20px 5% 100px 5%; }
+        }
 
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px; border-bottom: 2px solid #f5f5f7; font-size: 0.8rem; color: var(--text-secondary); }
@@ -141,6 +149,7 @@
         document.getElementById(id + '-section').classList.add('active');
         document.getElementById('btn-' + id).classList.add('active');
         if(id === 'sales') loadSales();
+        if(id === 'products') loadProducts();
     }
 
     async function loadProducts() {
@@ -166,6 +175,7 @@
         const input = document.getElementById(`stok-add-${productId}`);
         const addValue = parseInt(input.value);
         if (isNaN(addValue) || addValue <= 0) { alert("Geçerli bir sayı girin."); return; }
+        
         const { error } = await supabaseClient.from('products').update({ stock: currentStock + addValue }).eq('id', productId);
         if (error) alert("Hata: " + error.message);
         else { alert("Stok güncellendi!"); loadProducts(); }
@@ -186,8 +196,8 @@
                     <div>
                         <h3 style="margin-bottom:8px;">📦 ${order.product_name}</h3>
                         <p style="font-size:0.85rem; margin-bottom:4px;"><b>Müşteri:</b> ${order.customer_full_name}</p>
-                        <p style="font-size:0.85rem; margin-bottom:4px; color: #0071e3;"><b>Telefon:</b> ${order.customer_phone || 'Belirtilmemiş'}</p>
-                        <p style="font-size:0.85rem;"><b>Adres:</b> ${order.customer_address}</p>
+                        <p style="font-size:0.85rem; margin-bottom:4px;"><b>Adres:</b> ${order.customer_address}</p>
+                        <p style="font-size:0.85rem; color:#0071e3; font-weight:600;"><b>Tel:</b> ${order.customer_phone || 'Belirtilmemiş'}</p>
                     </div>
                     <span class="status-badge">${order.status}</span>
                 </div>
@@ -208,7 +218,7 @@
 
     document.getElementById('productForm').onsubmit = async (e) => {
         e.preventDefault();
-        await supabaseClient.from('products').insert([{
+        const { error } = await supabaseClient.from('products').insert([{
             seller_id: userSession.id,
             name: document.getElementById('pName').value,
             image_url: document.getElementById('pImg').value,
@@ -216,7 +226,8 @@
             price: document.getElementById('pPrice').value,
             stock: document.getElementById('pStock').value
         }]);
-        loadProducts(); e.target.reset();
+        if (error) alert("Hata: " + error.message);
+        else { alert("Ürün eklendi!"); loadProducts(); e.target.reset(); }
     };
 
     async function deleteProduct(id) {
