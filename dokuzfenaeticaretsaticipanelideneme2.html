@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satıcı Paneli | Dokuz FEN A</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #000; --bg: #f9fafb; --white: #fff; --border: #e5e7eb; --danger: #ef4444; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--primary); display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--white); border-right: 1px solid var(--border); padding: 30px 20px; display: flex; flex-direction: column; position: fixed; height: 100%; }
+        .sidebar h2 { font-weight: 800; font-size: 1.2rem; margin-bottom: 40px; letter-spacing: -1px; }
+        .nav-btn { width: 100%; padding: 12px 15px; margin-bottom: 10px; border: none; background: none; text-align: left; cursor: pointer; border-radius: 8px; font-weight: 600; transition: 0.2s; }
+        .nav-btn:hover { background: #f3f4f6; }
+        .nav-btn.active { background: var(--primary); color: var(--white); }
+        .logout-btn { margin-top: auto; color: var(--danger); }
+
+        /* Ana İçerik */
+        .main-content { margin-left: 260px; flex: 1; padding: 40px; max-width: calc(100% - 260px); }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Kartlar ve Formlar */
+        .card { background: var(--white); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; position: relative; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 600; color: #4b5563; }
+        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--primary); }
+        .btn-primary { background: var(--primary); color: var(--white); padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; width: 100%; }
+
+        /* Tablo */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+        .status-badge { background: #f3f4f6; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .order-info b { font-size: 0.9rem; display: block; margin-bottom: 4px; }
+        .order-info p { font-size: 0.85rem; color: #4b5563; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>DOKUZ FEN A</h2>
+    <button class="nav-btn active" id="btn-products" onclick="showSection('products')">📦 Ürünlerim</button>
+    <button class="nav-btn" id="btn-sales" onclick="showSection('sales')">💰 Satışlar</button>
+    <button class="nav-btn logout-btn" onclick="handleLogout()">🚪 Çıkış Yap</button>
+</div>
+
+<div class="main-content">
+    <div id="products-section" class="section active">
+        <h1 style="margin-bottom: 30px;">Ürün Yönetimi</h1>
+        <div class="card">
+            <h3 style="margin-bottom: 15px;">Yeni Ürün Ekle</h3>
+            <form id="productForm">
+                <div class="input-group">
+                    <label>Ürün Adı</label>
+                    <input type="text" id="pName" placeholder="Örn: Kablosuz Mouse" required>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Fiyat (TL)</label>
+                        <input type="number" id="pPrice" placeholder="0.00" required>
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>Stok Adedi</label>
+                        <input type="number" id="pStock" placeholder="0" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Ürünü Veritabanına Ekle</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <table id="productTable">
+                <thead>
+                    <tr>
+                        <th>Ürün Adı</th>
+                        <th>Fiyat</th>
+                        <th>Stok</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="sales-section" class="section">
+        <h1 style="margin-bottom: 30px;">Gelen Siparişler</h1>
+        <div id="salesList">
+            </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://acxxlnnwwlujixymjane.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let userSession = null;
+
+    async function init() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) {
+            window.location.href = 'dokuzfenaeticaretauth.html';
+            return;
+        }
+        userSession = user;
+        loadProducts();
+        loadSales();
+    }
+
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id + '-section').classList.add('active');
+        document.getElementById('btn-' + id).classList.add('active');
+    }
+
+    // Ürünleri Getir
+    async function loadProducts() {
+        const { data } = await supabaseClient.from('products').select('*').eq('seller_id', userSession.id);
+        const tbody = document.getElementById('productTableBody');
+        tbody.innerHTML = data?.map(p => `
+            <tr>
+                <td>${p.name}</td>
+                <td>${p.price} TL</td>
+                <td>${p.stock}</td>
+                <td><button onclick="deleteProduct('${p.id}')" style="color:red; background:none; border:none; cursor:pointer;">Sil</button></td>
+            </tr>
+        `).join('') || '<tr><td colspan="4">Ürün bulunamadı.</td></tr>';
+    }
+
+    // Ürün Ekle
+    document.getElementById('productForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const { error } = await supabaseClient.from('products').insert([{
+            seller_id: userSession.id,
+            name: document.getElementById('pName').value,
+            price: document.getElementById('pPrice').value,
+            stock: document.getElementById('pStock').value
+        }]);
+        if (error) alert(error.message); else { loadProducts(); e.target.reset(); }
+    };
+
+    // Ürün Sil
+    async function deleteProduct(id) {
+        await supabaseClient.from('products').delete().eq('id', id);
+        loadProducts();
+    }
+
+    // Satışları ve Müşteri Bilgilerini Getir
+    async function loadSales() {
+        const { data } = await supabaseClient.from('orders').select('*').eq('seller_id', userSession.id);
+        const container = document.getElementById('salesList');
+        
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="card"><p>Henüz bir satış gerçekleşmedi.</p></div>';
+            return;
+        }
+
+        container.innerHTML = data.map(order => `
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div class="order-info">
+                        <b>📦 Ürün: ${order.product_name}</b>
+                        <p>👤 <b>Alıcı:</b> ${order.customer_full_name}</p>
+                        <p>📍 <b>Adres:</b> ${order.customer_address}</p>
+                        <p>📞 <b>Tel:</b> ${order.customer_phone}</p>
+                    </div>
+                    <div style="text-align:right">
+                        <span class="status-badge">${order.status}</span>
+                        <h2 style="margin-top:10px;">${order.total_price} TL</h2>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function handleLogout() {
+        await supabaseClient.auth.signOut();
+        window.location.href = 'dokuzfenaeticaretauth.html';
+    }
+
+    init();
+</script>
+</body>
+</html>
