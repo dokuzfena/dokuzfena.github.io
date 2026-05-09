@@ -42,7 +42,7 @@
 <body>
 
 <div class="container">
-    <a href="dokuzfenaeticaretsepetim.html" class="back-link">← Sepete Dön</a>
+    <a href="sepet.html" class="back-link">← Sepete Dön</a>
     <h1>Ödeme Detayları</h1>
     
     <div class="payment-card">
@@ -81,7 +81,7 @@
     const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Kart numarası aralarına boşluk ekleme (Görsel iyileştirme)
+    // Kart numarası formatlama
     document.getElementById('cardNumber').addEventListener('input', function (e) {
         e.target.value = e.target.value.replace(/[^\d]/g, '').replace(/(.{4})/g, '$1 ').trim();
     });
@@ -95,38 +95,55 @@
             return;
         }
 
-        btn.innerText = "Ödeme Doğrulanıyor...";
+        btn.innerText = "İşlem Yapılıyor...";
         btn.disabled = true;
 
         try {
             const { data: { user } } = await supabaseClient.auth.getUser();
             const sepet = JSON.parse(localStorage.getItem('dokuzfena_sepet')) || [];
             
-            // Profil bilgilerini çek (Adres, Tel vb.)
+            // Profil bilgilerini çek
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
 
-            // Her bir ürünü veritabanına sipariş olarak işle
             for (let item of sepet) {
-                const { data: product } = await supabaseClient.from('products').select('seller_id').eq('id', item.id).single();
+                // 1. Ürünü ve stok durumunu kontrol et
+                const { data: product, error: pError } = await supabaseClient
+                    .from('products')
+                    .select('seller_id, stock')
+                    .eq('id', item.id)
+                    .single();
 
-                const { error } = await supabaseClient.from('orders').insert([{
+                if (pError || product.stock <= 0) {
+                    throw new Error(`${item.name} ürününde yeterli stok kalmamış.`);
+                }
+
+                // 2. Siparişi oluştur
+                const { error: orderError } = await supabaseClient.from('orders').insert([{
                     product_id: item.id,
                     product_name: item.name,
                     total_price: parseFloat(item.price.replace(/[^\d]/g, '')),
                     seller_id: product.seller_id,
                     customer_id: user.id,
                     customer_full_name: profile.full_name,
-                    customer_address: profile.company_name,
+                    customer_address: profile.company_name, // Adres bilgisi burada tutuluyor
                     customer_phone: profile.phone,
                     status: 'Ödeme Alındı'
                 }]);
 
-                if (error) throw error;
+                if (orderError) throw orderError;
+
+                // 3. Stoktan düş
+                const { error: stockError } = await supabaseClient
+                    .from('products')
+                    .update({ stock: product.stock - 1 })
+                    .eq('id', item.id);
+
+                if (stockError) throw stockError;
             }
 
-            alert("Ödemeniz başarıyla alındı! Siparişiniz satıcıya yönlendirildi.");
+            alert("Ödemeniz başarıyla alındı ve siparişiniz oluşturuldu!");
             localStorage.removeItem('dokuzfena_sepet');
-            window.location.href = 'dokuzfenahesabim.html';
+            window.location.href = 'dokuzfenaeticarethesabim.html';
 
         } catch (err) {
             alert("Hata oluştu: " + err.message);
