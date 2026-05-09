@@ -11,7 +11,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--primary); display: flex; min-height: 100vh; }
 
-        /* Yan Menü (Sidebar) */
         .sidebar { width: 280px; background: var(--secondary); padding: 40px 20px; display: flex; flex-direction: column; border-right: 1px solid rgba(0,0,0,0.05); }
         .sidebar h2 { font-weight: 800; font-size: 1.2rem; margin-bottom: 40px; letter-spacing: -1px; }
         
@@ -21,37 +20,30 @@
             display: flex; align-items: center; gap: 12px; transition: 0.2s;
         }
         .nav-btn.active { background: var(--primary); color: #fff; }
-        .nav-btn:hover:not(.active) { background: rgba(0,0,0,0.05); }
 
-        /* Ana İçerik Alanı */
         .main-content { flex: 1; padding: 60px 8%; max-width: 1000px; }
-        .section { display: none; animation: fadeIn 0.3s ease; }
+        .section { display: none; }
         .section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 35px; letter-spacing: -1.5px; }
 
-        /* Kartlar ve Formlar */
         .card { background: #fff; padding: 30px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
         .input-group { margin-bottom: 20px; }
         label { display: block; font-size: 0.75rem; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 8px; }
         input, textarea { width: 100%; padding: 15px; border-radius: 12px; border: 1.5px solid var(--border); font-size: 1rem; outline: none; background: #fafafa; }
-        input:focus { border-color: var(--primary); background: #fff; }
 
-        .btn-save { background: var(--primary); color: #fff; border: none; padding: 16px 30px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-save:hover { opacity: 0.9; }
+        .btn-save { background: var(--primary); color: #fff; border: none; padding: 16px 30px; border-radius: 12px; font-weight: 700; cursor: pointer; }
 
-        /* Sipariş Kartı Tasarımı */
-        .order-card { 
+        /* Sipariş Listesi Stili */
+        .order-item { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 20px; border: 1px solid #eee; border-radius: 16px; margin-bottom: 15px;
+            padding: 20px; border-bottom: 1px solid #eee; 
         }
-        .order-status { padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; background: #e8f5e9; color: #2e7d32; text-transform: uppercase; }
-
+        .order-item:last-child { border-bottom: none; }
+        
         @media (max-width: 768px) {
             body { flex-direction: column; }
             .sidebar { width: 100%; height: auto; padding: 20px; border-right: none; border-bottom: 1px solid #eee; }
-            .main-content { padding: 30px 20px; }
         }
     </style>
 </head>
@@ -62,7 +54,6 @@
     <button class="nav-btn active" id="btn-profile" onclick="showSection('profile')">👤 Profilim</button>
     <button class="nav-btn" id="btn-orders" onclick="showSection('orders')">📦 Siparişlerim</button>
     <button class="nav-btn" id="btn-security" onclick="showSection('security')">🔒 Güvenlik</button>
-    <button class="nav-btn" onclick="window.location.href='dokuzfenaeticaretsitesi.html'" style="margin-top: auto; color: var(--accent);">← Mağazaya Dön</button>
 </div>
 
 <div class="main-content">
@@ -72,15 +63,15 @@
             <form id="profileForm">
                 <div class="input-group">
                     <label>Ad Soyad</label>
-                    <input type="text" id="fullName" placeholder="Adınız Soyadınız">
+                    <input type="text" id="fullName">
                 </div>
                 <div class="input-group">
                     <label>Telefon</label>
-                    <input type="tel" id="phone" placeholder="05xx xxx xx xx">
+                    <input type="tel" id="phone">
                 </div>
                 <div class="input-group">
                     <label>Teslimat Adresi</label>
-                    <textarea id="address" placeholder="Açık adresinizi buraya yazın..."></textarea>
+                    <textarea id="address"></textarea>
                 </div>
                 <button type="submit" class="btn-save">Değişiklikleri Kaydet</button>
             </form>
@@ -89,17 +80,17 @@
 
     <div id="orders-section" class="section">
         <h1>Siparişlerim</h1>
-        <div id="ordersList">
-            <p style="color:#86868b;">Yükleniyor...</p>
+        <div class="card" id="ordersList" style="padding: 10px;">
+            <p style="padding: 20px; color: #86868b;">Siparişleriniz yükleniyor...</p>
         </div>
     </div>
 
     <div id="security-section" class="section">
-        <h1>Güvenlik Ayarları</h1>
+        <h1>Güvenlik</h1>
         <div class="card">
             <div class="input-group">
                 <label>Yeni Şifre</label>
-                <input type="password" id="newPassword" placeholder="••••••••">
+                <input type="password" id="newPassword">
             </div>
             <button class="btn-save" onclick="sifreGuncelle()">Şifreyi Güncelle</button>
         </div>
@@ -115,12 +106,11 @@
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) { window.location.href = 'dokuzfenaeticaretauth.html'; return; }
         
-        // Profil Verilerini Getir
         const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
         if (profile) {
             document.getElementById('fullName').value = profile.full_name || '';
             document.getElementById('phone').value = profile.phone || '';
-            document.getElementById('address').value = profile.company_name || ''; // Adres burada tutuluyor
+            document.getElementById('address').value = profile.company_name || '';
         }
     }
 
@@ -145,19 +135,19 @@
             .order('created_at', { ascending: false });
 
         if (error || !orders || orders.length === 0) {
-            container.innerHTML = '<div class="card" style="text-align:center; color:#86868b;">Henüz bir siparişiniz bulunmuyor.</div>';
+            container.innerHTML = '<p style="padding: 20px; color: #86868b; text-align: center;">Henüz bir siparişiniz bulunmuyor.</p>';
             return;
         }
 
         container.innerHTML = orders.map(order => `
-            <div class="order-card">
+            <div class="order-item">
                 <div>
-                    <h3 style="font-size:1rem; margin-bottom:5px;">${order.product_name}</h3>
-                    <p style="font-size:0.8rem; color:#86868b;">${new Date(order.created_at).toLocaleDateString('tr-TR')}</p>
+                    <strong style="display: block; font-size: 1.1rem;">${order.product_name}</strong>
+                    <span style="font-size: 0.8rem; color: #86868b;">${new Date(order.created_at).toLocaleDateString('tr-TR')}</span>
                 </div>
-                <div style="text-align:right;">
-                    <div class="order-status">${order.status}</div>
-                    <p style="margin-top:10px; font-weight:800;">${order.total_price.toLocaleString()} TL</p>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #0071e3; margin-bottom: 5px;">${order.status}</div>
+                    <div style="font-weight: 800;">${order.total_price.toLocaleString()} TL</div>
                 </div>
             </div>
         `).join('');
@@ -166,25 +156,21 @@
     document.getElementById('profileForm').onsubmit = async (e) => {
         e.preventDefault();
         const { data: { user } } = await supabaseClient.auth.getUser();
-        
         const { error } = await supabaseClient.from('profiles').upsert({
             id: user.id,
             full_name: document.getElementById('fullName').value,
             phone: document.getElementById('phone').value,
-            company_name: document.getElementById('address').value // Adres
+            company_name: document.getElementById('address').value
         });
-
         if (error) alert("Hata: " + error.message);
-        else alert("Profil bilgileriniz güncellendi!");
+        else alert("Profil güncellendi!");
     };
 
     async function sifreGuncelle() {
         const newPass = document.getElementById('newPassword').value;
-        if(newPass.length < 6) { alert("Şifre en az 6 karakter olmalıdır."); return; }
-        
         const { error } = await supabaseClient.auth.updateUser({ password: newPass });
         if (error) alert("Hata: " + error.message);
-        else alert("Şifreniz başarıyla güncellendi!");
+        else alert("Şifre güncellendi!");
     }
 
     init();
