@@ -9,7 +9,7 @@
     <style>
         :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --accent: #0071e3; --error: #ff3b30; --success: #34c759; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--primary); padding-bottom: 50px; }
+        body { background: var(--bg); color: var(--primary); }
 
         .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
         h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 30px; letter-spacing: -1.5px; }
@@ -26,7 +26,7 @@
         
         input, textarea {
             width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
-            font-size: 1rem; margin-top: 5px; display: none;
+            font-size: 1rem; margin-top: 5px; display: none; background: #fff;
         }
 
         .btn { padding: 12px 24px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; border: none; font-size: 0.9rem; }
@@ -34,14 +34,13 @@
         .btn-save { background: var(--success); color: #fff; display: none; margin-right: 10px; }
         .btn-cancel { background: var(--error); color: #fff; display: none; }
         
-        /* Şifre Bölümü Stili */
-        .password-section { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 25px; }
-        .pw-input { display: block !important; margin-bottom: 15px; background: #fff; }
-        
+        .password-section { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 20px; display: none; }
+        .editing .password-section { display: block; }
+
         .logout { color: var(--error); font-weight: 700; cursor: pointer; display: block; margin-top: 40px; }
         
         .editing .value { display: none; }
-        .editing input:not(.pw-input), .editing textarea { display: block; }
+        .editing input, .editing textarea { display: block; }
         .editing .btn-save, .editing .btn-cancel { display: inline-block; }
         .editing .btn-edit { display: none; }
     </style>
@@ -58,7 +57,7 @@
     </div>
 
     <div id="settings-content" class="card">
-        <button class="btn btn-edit" id="edit-btn" onclick="toggleEdit(true)">✏️ Bilgilerimi Düzenle</button>
+        <button class="btn btn-edit" id="edit-btn" onclick="toggleEdit(true)">✏️ Bilgileri Düzenle</button>
         
         <div id="profil-fields">
             <div class="info-group">
@@ -77,16 +76,19 @@
             </div>
 
             <div class="password-section">
-                <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Şifre Değiştir</h3>
+                <h3 style="font-size: 1rem; margin-bottom: 15px;">Güvenlik: Şifre Değiştir</h3>
+                <div class="info-group">
+                    <span class="label">Mevcut Şifre</span>
+                    <input type="password" id="old_pass" placeholder="Mevcut şifreniz">
+                </div>
                 <div class="info-group">
                     <span class="label">Yeni Şifre</span>
-                    <input type="password" id="new_pw" class="pw-input" placeholder="Yeni şifre girin">
+                    <input type="password" id="new_pass" placeholder="En az 6 karakter">
                 </div>
                 <div class="info-group">
                     <span class="label">Yeni Şifre (Tekrar)</span>
-                    <input type="password" id="confirm_pw" class="pw-input" placeholder="Yeni şifreyi onaylayın">
+                    <input type="password" id="new_pass_confirm" placeholder="Yeni şifreyi tekrarla">
                 </div>
-                <button class="btn btn-primary" style="background: #000; color: #fff; width: 100%;" onclick="changePassword()">Şifreyi Güncelle</button>
             </div>
         </div>
 
@@ -116,17 +118,19 @@
     const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let userId = null;
+    let userEmail = "";
 
     async function loadUser() {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) { window.location.href = 'dokuzfenaeticaretauth.html'; return; }
         userId = user.id;
+        userEmail = user.email;
 
         const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
         
         document.getElementById('view_name').innerText = profile.full_name || "İsimsiz";
-        document.getElementById('view_email').innerText = user.email;
-        document.getElementById('view_phone').innerText = profile.phone || "Ekle";
+        document.getElementById('view_email').innerText = userEmail;
+        document.getElementById('view_phone').innerText = profile.phone || "Eklenmedi";
         document.getElementById('view_address').innerText = profile.company_name || "Eklenmemiş";
 
         document.getElementById('input_name').value = profile.full_name || "";
@@ -134,61 +138,60 @@
         document.getElementById('input_address').value = profile.company_name || "";
     }
 
-    // Şifre Değiştirme Fonksiyonu
-    async function changePassword() {
-        const newPw = document.getElementById('new_pw').value;
-        const confirmPw = document.getElementById('confirm_pw').value;
-
-        if (!newPw || !confirmPw) {
-            alert("Lütfen tüm şifre alanlarını doldurun.");
-            return;
-        }
-
-        if (newPw !== confirmPw) {
-            alert("Yeni şifreler birbiriyle eşleşmiyor!");
-            return;
-        }
-
-        if (newPw.length < 6) {
-            alert("Şifre en az 6 karakter olmalıdır.");
-            return;
-        }
-
-        const { error } = await supabaseClient.auth.updateUser({ password: newPw });
-
-        if (error) {
-            alert("Şifre güncellenirken hata oluştu: " + error.message);
-        } else {
-            alert("Şifreniz başarıyla değiştirildi!");
-            document.getElementById('new_pw').value = "";
-            document.getElementById('confirm_pw').value = "";
-        }
-    }
-
     function toggleEdit(isEditing) {
         const card = document.getElementById('settings-content');
         if (isEditing) card.classList.add('editing');
-        else card.classList.remove('editing');
+        else {
+            card.classList.remove('editing');
+            // Şifre kutularını temizle
+            document.getElementById('old_pass').value = "";
+            document.getElementById('new_pass').value = "";
+            document.getElementById('new_pass_confirm').value = "";
+        }
     }
 
     async function saveData() {
         const newName = document.getElementById('input_name').value;
         const newPhone = document.getElementById('input_phone').value;
         const newAddress = document.getElementById('input_address').value;
+        
+        const oldPass = document.getElementById('old_pass').value;
+        const newPass = document.getElementById('new_pass').value;
+        const newPassConfirm = document.getElementById('new_pass_confirm').value;
 
-        const { error } = await supabaseClient.from('profiles').update({
+        // 1. ADIM: Profil Bilgilerini Güncelle
+        const { error: profileError } = await supabaseClient.from('profiles').update({
             full_name: newName,
             phone: newPhone,
             company_name: newAddress
         }).eq('id', userId);
 
-        if (!error) {
-            alert("Profiliniz güncellendi!");
-            toggleEdit(false);
-            loadUser();
+        if (profileError) { alert("Profil hatası: " + profileError.message); return; }
+
+        // 2. ADIM: Şifre Değiştirme (Eğer kutular dolysa)
+        if (oldPass || newPass || newPassConfirm) {
+            if (newPass !== newPassConfirm) { alert("Yeni şifreler eşleşmiyor!"); return; }
+            if (newPass.length < 6) { alert("Yeni şifre en az 6 karakter olmalı!"); return; }
+
+            // Önce mevcut şifreyle giriş yapmayı deneyerek doğrula
+            const { error: loginError } = await supabaseClient.auth.signInWithPassword({
+                email: userEmail,
+                password: oldPass
+            });
+
+            if (loginError) { alert("Mevcut şifreniz hatalı!"); return; }
+
+            // Şifreyi güncelle
+            const { error: passError } = await supabaseClient.auth.updateUser({ password: newPass });
+            if (passError) { alert("Şifre güncellenemedi: " + passError.message); return; }
+            
+            alert("Bilgileriniz ve şifreniz başarıyla güncellendi!");
         } else {
-            alert("Hata: " + error.message);
+            alert("Profil bilgileriniz güncellendi!");
         }
+
+        toggleEdit(false);
+        loadUser();
     }
 
     function switchTab(type) {
@@ -198,10 +201,7 @@
         document.getElementById('edit-btn').style.display = type === 'siparis' ? 'none' : 'block';
         
         document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-        if(type === 'profil') document.getElementById('t1').classList.add('active');
-        if(type === 'adres') document.getElementById('t2').classList.add('active');
-        if(type === 'siparis') document.getElementById('t3').classList.add('active');
-        
+        document.getElementById(type === 'profil' ? 't1' : type === 'adres' ? 't2' : 't3').classList.add('active');
         toggleEdit(false);
     }
 
