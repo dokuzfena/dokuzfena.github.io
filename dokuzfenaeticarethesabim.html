@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hesabım | Dokuz FEN A</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #000; 
+            --bg: #ffffff; 
+            --secondary: #f5f5f7; 
+            --border: #d2d2d7; 
+            --text-gray: #86868b; 
+            --radius: 20px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--primary); -webkit-font-smoothing: antialiased; }
+
+        nav { 
+            padding: 20px 5%; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--secondary);
+        }
+        
+        .logo { font-weight: 800; font-size: 1.2rem; cursor: pointer; letter-spacing: -0.5px; }
+
+        .container { max-width: 1100px; margin: 60px auto; padding: 0 24px; }
+        
+        h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 40px; letter-spacing: -1.5px; }
+
+        /* Profil Başlık Alanı */
+        .profile-hero { 
+            display: flex; 
+            align-items: center; 
+            gap: 28px; 
+            margin-bottom: 50px; 
+            padding: 40px; 
+            background: var(--secondary); 
+            border-radius: 32px;
+        }
+        
+        .avatar { 
+            width: 90px; 
+            height: 90px; 
+            background: var(--primary); 
+            color: #fff; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 2rem; 
+            font-weight: 800; 
+        }
+        
+        .user-meta h2 { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+        .user-meta p { color: var(--text-gray); font-size: 1rem; }
+
+        /* Grid Sistemi */
+        .action-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+            gap: 24px; 
+        }
+        
+        .card { 
+            padding: 32px; 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .card:hover { 
+            border-color: var(--primary); 
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+        }
+        
+        .card h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; }
+        .card p { color: var(--text-gray); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; }
+
+        .btn-link { 
+            display: inline-block;
+            color: var(--primary); 
+            text-decoration: none; 
+            font-weight: 700; 
+            font-size: 0.9rem; 
+            transition: opacity 0.2s;
+        }
+        
+        .btn-link:hover { opacity: 0.6; }
+
+        /* Çıkış Yap Butonu */
+        .danger-zone { margin-top: 60px; padding-top: 40px; border-top: 1px solid var(--secondary); }
+        .logout-btn { 
+            padding: 16px 32px; 
+            background: transparent; 
+            color: #ff3b30; 
+            border: 1px solid #ff3b30; 
+            border-radius: 14px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        
+        .logout-btn:hover { background: #ff3b30; color: #fff; }
+
+        /* Loading Screen */
+        #loader { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #fff; display: flex; align-items: center; justify-content: center; z-index: 2000; 
+        }
+    </style>
+</head>
+<body>
+
+<div id="loader">Giriş kontrol ediliyor...</div>
+
+<nav>
+    <div class="logo" onclick="location.href='index.html'">DOKUZ FEN A</div>
+</nav>
+
+<div class="container" id="main-ui" style="display: none;">
+    <h1>Hesabım</h1>
+    
+    <div class="profile-hero">
+        <div class="avatar" id="user-initial">?</div>
+        <div class="user-meta">
+            <h2 id="user-name">Kullanıcı</h2>
+            <p id="user-email">email@adresi.com</p>
+        </div>
+    </div>
+
+    <div class="action-grid">
+        <div class="card">
+            <div>
+                <h3>Siparişlerim</h3>
+                <p>Mevcut siparişlerinizin durumunu kontrol edin veya geçmiş alışverişlerinizi inceleyin.</p>
+            </div>
+            <a href="#" class="btn-link">Siparişleri Yönet →</a>
+        </div>
+
+        <div class="card">
+            <div>
+                <h3>Adres Bilgilerim</h3>
+                <p id="user-address">Adres bilgisi yükleniyor...</p>
+            </div>
+            <a href="#" class="btn-link">Adresleri Düzenle →</a>
+        </div>
+
+        <div class="card">
+            <div>
+                <h3>Ödeme Yöntemleri</h3>
+                <p>Kayıtlı kartlarınızı yönetin ve güvenli ödeme ayarlarınızı yapılandırın.</p>
+            </div>
+            <a href="#" class="btn-link">Kartları Gör →</a>
+        </div>
+
+        <div class="card">
+            <div>
+                <h3>Güvenlik ve Şifre</h3>
+                <p>Hesap güvenliğinizi artırın, şifrenizi güncelleyin veya iki adımlı doğrulamayı açın.</p>
+            </div>
+            <a href="#" class="btn-link">Güvenlik Ayarları →</a>
+        </div>
+    </div>
+
+    <div class="danger-zone">
+        <button class="logout-btn" onclick="handleLogout()">Oturumu Kapat</button>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://acxxlnnwwlujixymjane.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function checkAuth() {
+        // 1. ADIM: Tarayıcıda oturum var mı kontrol et
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        
+        if (!user) {
+            // KAYITLI DEĞİLSE: Senin giriş sayfasına yolla
+            window.location.href = 'dokuzfenaeticaretauth.html';
+            return;
+        }
+
+        // KAYITLIYSA: Bilgileri profiles tablosundan getir
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        // 2. ADIM: UI Güncelle
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('main-ui').style.display = 'block';
+        
+        const fullName = profile?.full_name || "Değerli Üyemiz";
+        document.getElementById('user-name').innerText = "Merhaba, " + fullName;
+        document.getElementById('user-email').innerText = user.email;
+        document.getElementById('user-initial').innerText = fullName.charAt(0).toUpperCase();
+        document.getElementById('user-address').innerHTML = profile?.company_name 
+            ? "<b>Kayıtlı Adres:</b><br>" + profile.company_name 
+            : "Henüz bir adres eklemediniz.";
+    }
+
+    async function handleLogout() {
+        await supabaseClient.auth.signOut();
+        window.location.href = 'index.html';
+    }
+
+    checkAuth();
+</script>
+</body>
+</html>
