@@ -234,7 +234,11 @@
         if(confirm("Silinsin mi?")) { await supabaseClient.from('products').delete().eq('id', id); loadProducts(); }
     }
 
-    async function handleLogout() { await supabaseClient.signOut(); window.location.href = 'dokuzfenaeticaretauth.html'; }
+    // ÇIKIŞ BUTONU DÜZELTİLDİ: .auth eklendi
+    async function handleLogout() { 
+        await supabaseClient.auth.signOut(); 
+        window.location.href = 'dokuzfenaeticaretauth.html';
+    }
 
     init();
 </script>
