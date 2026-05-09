@@ -22,7 +22,6 @@
         
         body { background: var(--bg); color: var(--primary); display: flex; min-height: 100vh; }
 
-        /* Sidebar */
         .sidebar { 
             width: 260px; background: var(--sidebar-bg); padding: 40px 20px; 
             display: flex; flex-direction: column; position: fixed; height: 100vh;
@@ -30,7 +29,6 @@
         }
         .sidebar h2 { font-weight: 800; font-size: 1.25rem; margin-bottom: 48px; letter-spacing: -0.5px; }
 
-        /* Main Content */
         .main-content { margin-left: 260px; flex: 1; padding: 40px 5%; max-width: 1200px; }
         
         .section { display: none; animation: fadeIn 0.3s ease; }
@@ -39,7 +37,6 @@
 
         h1 { font-size: 2rem; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; }
 
-        /* Kartlar */
         .card { background: #fff; padding: 25px; border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 25px; position: relative; }
         .input-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 6px; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
@@ -48,14 +45,12 @@
             width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-md); 
             outline: none; font-size: 0.95rem; background: #fafafa; transition: 0.2s;
         }
-        input:focus, textarea:focus { border-color: var(--primary); background: #fff; }
 
         .btn-primary { 
             background: var(--primary); color: #fff; padding: 16px; border: none; 
             border-radius: var(--radius-md); cursor: pointer; font-weight: 700; width: 100%;
         }
 
-        /* Navigasyon */
         .nav-btn { 
             width: 100%; padding: 14px; margin-bottom: 6px; border: none; background: transparent; 
             text-align: left; cursor: pointer; border-radius: var(--radius-md); font-weight: 600;
@@ -63,23 +58,14 @@
         }
         .nav-btn.active { background: var(--primary); color: #fff; }
 
-        /* Sipariş İşlem Butonları */
         .status-badge { display: inline-block; padding: 5px 12px; background: #f5f5f7; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: var(--accent); }
         .action-group { display: flex; gap: 10px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
-        .btn-status { flex: 1; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .btn-status { flex: 1; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.8rem; }
         .btn-ship { background: var(--primary); color: #fff; border: none; }
         .btn-deliver { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
         
-        /* Stok Yenileme Input */
         .stock-input { width: 60px !important; padding: 5px !important; font-size: 0.8rem !important; margin: 0 5px; }
         .btn-stock { padding: 6px 10px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 0.7rem; cursor: pointer; }
-
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: 70px; flex-direction: row; bottom: 0; top: auto; padding: 10px 5%; border-right: none; border-top: 1px solid var(--border); justify-content: space-around; }
-            .sidebar h2 { display: none; }
-            .nav-btn { width: auto; padding: 10px; flex-direction: column; font-size: 0.7rem; }
-            .main-content { margin-left: 0; padding: 20px 5% 100px 5%; }
-        }
 
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px; border-bottom: 2px solid #f5f5f7; font-size: 0.8rem; color: var(--text-secondary); }
@@ -155,7 +141,6 @@
         document.getElementById(id + '-section').classList.add('active');
         document.getElementById('btn-' + id).classList.add('active');
         if(id === 'sales') loadSales();
-        if(id === 'products') loadProducts();
     }
 
     async function loadProducts() {
@@ -181,7 +166,6 @@
         const input = document.getElementById(`stok-add-${productId}`);
         const addValue = parseInt(input.value);
         if (isNaN(addValue) || addValue <= 0) { alert("Geçerli bir sayı girin."); return; }
-        
         const { error } = await supabaseClient.from('products').update({ stock: currentStock + addValue }).eq('id', productId);
         if (error) alert("Hata: " + error.message);
         else { alert("Stok güncellendi!"); loadProducts(); }
@@ -201,7 +185,8 @@
                 <div style="display: flex; justify-content: space-between; align-items: start;">
                     <div>
                         <h3 style="margin-bottom:8px;">📦 ${order.product_name}</h3>
-                        <p style="font-size:0.85rem;"><b>Müşteri:</b> ${order.customer_full_name}</p>
+                        <p style="font-size:0.85rem; margin-bottom:4px;"><b>Müşteri:</b> ${order.customer_full_name}</p>
+                        <p style="font-size:0.85rem; margin-bottom:4px; color: #0071e3;"><b>Telefon:</b> ${order.customer_phone || 'Belirtilmemiş'}</p>
                         <p style="font-size:0.85rem;"><b>Adres:</b> ${order.customer_address}</p>
                     </div>
                     <span class="status-badge">${order.status}</span>
@@ -238,7 +223,7 @@
         if(confirm("Silinsin mi?")) { await supabaseClient.from('products').delete().eq('id', id); loadProducts(); }
     }
 
-    async function handleLogout() { await supabaseClient.auth.signOut(); window.location.href = 'dokuzfenaeticaretauth.html'; }
+    async function handleLogout() { await supabaseClient.signOut(); window.location.href = 'dokuzfenaeticaretauth.html'; }
 
     init();
 </script>
