@@ -69,7 +69,10 @@
         .btn-status { flex: 1; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
         .btn-ship { background: var(--primary); color: #fff; border: none; }
         .btn-deliver { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
-        .btn-status:hover { opacity: 0.8; }
+        
+        /* Stok Yenileme Input */
+        .stock-input { width: 60px !important; padding: 5px !important; font-size: 0.8rem !important; margin: 0 5px; }
+        .btn-stock { padding: 6px 10px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 0.7rem; cursor: pointer; }
 
         @media (max-width: 768px) {
             .sidebar { width: 100%; height: 70px; flex-direction: row; bottom: 0; top: auto; padding: 10px 5%; border-right: none; border-top: 1px solid var(--border); justify-content: space-around; }
@@ -117,9 +120,9 @@
             </form>
         </div>
 
-        <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="card" style="padding: 0; overflow-x: auto;">
             <table>
-                <thead><tr><th>Ürün</th><th>Fiyat</th><th>Stok</th><th>İşlem</th></tr></thead>
+                <thead><tr><th>Ürün</th><th>Fiyat</th><th>Stok Takibi</th><th>İşlem</th></tr></thead>
                 <tbody id="productTableBody"></tbody>
             </table>
         </div>
@@ -152,18 +155,36 @@
         document.getElementById(id + '-section').classList.add('active');
         document.getElementById('btn-' + id).classList.add('active');
         if(id === 'sales') loadSales();
+        if(id === 'products') loadProducts();
     }
 
     async function loadProducts() {
         const { data } = await supabaseClient.from('products').select('*').eq('seller_id', userSession.id);
-        document.getElementById('productTableBody').innerHTML = data?.map(p => `
+        const tbody = document.getElementById('productTableBody');
+        tbody.innerHTML = data?.map(p => `
             <tr>
                 <td style="font-weight:600;">${p.name}</td>
                 <td>${p.price.toLocaleString()} TL</td>
-                <td>${p.stock}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-weight: 800;">${p.stock}</span>
+                        <input type="number" id="stok-add-${p.id}" class="stock-input" placeholder="+">
+                        <button onclick="updateStock('${p.id}', ${p.stock})" class="btn-stock">Ekle</button>
+                    </div>
+                </td>
                 <td><button onclick="deleteProduct('${p.id}')" style="color:#ff3b30; border:none; background:none; font-weight:700; cursor:pointer;">SİL</button></td>
             </tr>
         `).join('') || '<tr><td colspan="4" style="text-align:center; padding:20px;">Ürün yok.</td></tr>';
+    }
+
+    async function updateStock(productId, currentStock) {
+        const input = document.getElementById(`stok-add-${productId}`);
+        const addValue = parseInt(input.value);
+        if (isNaN(addValue) || addValue <= 0) { alert("Geçerli bir sayı girin."); return; }
+        
+        const { error } = await supabaseClient.from('products').update({ stock: currentStock + addValue }).eq('id', productId);
+        if (error) alert("Hata: " + error.message);
+        else { alert("Stok güncellendi!"); loadProducts(); }
     }
 
     async function loadSales() {
@@ -195,7 +216,7 @@
     }
 
     async function updateStatus(orderId, newStatus) {
-        const { error } = await supabaseClient.from('orders').update({ status: newStatus }).eq('id', orderId);
+        const { error } = await supabaseClient.from('orders').update({ status: newStatus }).eq('id', orderId).select();
         if (error) alert("Hata: " + error.message);
         else loadSales();
     }
