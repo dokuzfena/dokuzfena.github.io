@@ -27,19 +27,20 @@
 
         h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 35px; letter-spacing: -1.5px; }
 
-        .card { background: #fff; padding: 30px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .card { background: #fff; padding: 30px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; position: relative; }
+        .info-row { margin-bottom: 20px; border-bottom: 1px solid #f5f5f7; padding-bottom: 10px; }
+        .info-label { display: block; font-size: 0.75rem; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 4px; }
+        .info-value { font-size: 1.1rem; font-weight: 500; min-height: 1.5rem; }
+
+        /* Düzenleme Modu Gizli */
+        #edit-form { display: none; }
         .input-group { margin-bottom: 20px; }
-        label { display: block; font-size: 0.75rem; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 8px; }
         input, textarea { width: 100%; padding: 15px; border-radius: 12px; border: 1.5px solid var(--border); font-size: 1rem; outline: none; background: #fafafa; }
 
-        .btn-save { background: var(--primary); color: #fff; border: none; padding: 16px 30px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+        .btn-action { background: var(--primary); color: #fff; border: none; padding: 14px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); margin-right: 10px; }
 
-        /* Sipariş Listesi Stili */
-        .order-item { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 20px; border-bottom: 1px solid #eee; 
-        }
-        .order-item:last-child { border-bottom: none; }
+        .order-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #eee; }
         
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -58,8 +59,25 @@
 
 <div class="main-content">
     <div id="profile-section" class="section active">
-        <h1>Profil Bilgileri</h1>
-        <div class="card">
+        <h1>Hesabım</h1>
+        
+        <div class="card" id="view-mode">
+            <div class="info-row">
+                <span class="info-label">Ad Soyad</span>
+                <span class="info-value" id="display-fullName">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Telefon</span>
+                <span class="info-value" id="display-phone">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Teslimat Adresi</span>
+                <span class="info-value" id="display-address">-</span>
+            </div>
+            <button class="btn-action" onclick="toggleEdit(true)">Profilimi Düzenle</button>
+        </div>
+
+        <div class="card" id="edit-form">
             <form id="profileForm">
                 <div class="input-group">
                     <label>Ad Soyad</label>
@@ -73,7 +91,10 @@
                     <label>Teslimat Adresi</label>
                     <textarea id="address"></textarea>
                 </div>
-                <button type="submit" class="btn-save">Değişiklikleri Kaydet</button>
+                <div style="display: flex;">
+                    <button type="button" class="btn-action btn-outline" onclick="toggleEdit(false)">İptal</button>
+                    <button type="submit" class="btn-action">Güncelle</button>
+                </div>
             </form>
         </div>
     </div>
@@ -81,7 +102,7 @@
     <div id="orders-section" class="section">
         <h1>Siparişlerim</h1>
         <div class="card" id="ordersList" style="padding: 10px;">
-            <p style="padding: 20px; color: #86868b;">Siparişleriniz yükleniyor...</p>
+            <p style="padding: 20px; color: #86868b;">Yükleniyor...</p>
         </div>
     </div>
 
@@ -105,22 +126,36 @@
     async function init() {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) { window.location.href = 'dokuzfenaeticaretauth.html'; return; }
-        
+        loadProfileData();
+    }
+
+    async function loadProfileData() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
         const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+        
         if (profile) {
+            // Görüntüleme alanları
+            document.getElementById('display-fullName').innerText = profile.full_name || 'Girilmemiş';
+            document.getElementById('display-phone').innerText = profile.phone || 'Girilmemiş';
+            document.getElementById('display-address').innerText = profile.company_name || 'Girilmemiş';
+
+            // Form alanları (düzenleme için hazır bekler)
             document.getElementById('fullName').value = profile.full_name || '';
             document.getElementById('phone').value = profile.phone || '';
             document.getElementById('address').value = profile.company_name || '';
         }
     }
 
+    function toggleEdit(isEdit) {
+        document.getElementById('view-mode').style.display = isEdit ? 'none' : 'block';
+        document.getElementById('edit-form').style.display = isEdit ? 'block' : 'none';
+    }
+
     function showSection(sectionId) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        
         document.getElementById(sectionId + '-section').classList.add('active');
         document.getElementById('btn-' + sectionId).classList.add('active');
-
         if(sectionId === 'orders') siparisleriYukle();
     }
 
@@ -146,7 +181,7 @@
                     <span style="font-size: 0.8rem; color: #86868b;">${new Date(order.created_at).toLocaleDateString('tr-TR')}</span>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 0.75rem; font-weight: 700; color: #0071e3; margin-bottom: 5px;">${order.status}</div>
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #0071e3;">${order.status}</div>
                     <div style="font-weight: 800;">${order.total_price.toLocaleString()} TL</div>
                 </div>
             </div>
@@ -156,22 +191,21 @@
     document.getElementById('profileForm').onsubmit = async (e) => {
         e.preventDefault();
         const { data: { user } } = await supabaseClient.auth.getUser();
+        
         const { error } = await supabaseClient.from('profiles').upsert({
             id: user.id,
             full_name: document.getElementById('fullName').value,
             phone: document.getElementById('phone').value,
             company_name: document.getElementById('address').value
         });
-        if (error) alert("Hata: " + error.message);
-        else alert("Profil güncellendi!");
-    };
 
-    async function sifreGuncelle() {
-        const newPass = document.getElementById('newPassword').value;
-        const { error } = await supabaseClient.auth.updateUser({ password: newPass });
         if (error) alert("Hata: " + error.message);
-        else alert("Şifre güncellendi!");
-    }
+        else {
+            alert("Profiliniz güncellendi!");
+            loadProfileData(); // Verileri tekrar çek
+            toggleEdit(false); // Görüntüleme moduna dön
+        }
+    };
 
     init();
 </script>
