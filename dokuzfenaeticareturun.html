@@ -10,42 +10,29 @@
         :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --accent: #0071e3; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--primary); }
-
         .container { max-width: 1100px; margin: 40px auto; padding: 0 5%; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
-        
         .product-gallery { position: sticky; top: 40px; }
         .main-img { width: 100%; border-radius: 30px; background: var(--secondary); min-height: 400px; object-fit: contain; }
-
         .product-info h1 { font-size: 3rem; font-weight: 800; letter-spacing: -2px; margin-bottom: 10px; }
-        .seller-tag { color: #86868b; font-weight: 600; font-size: 0.9rem; margin-bottom: 20px; display: block; }
+        .seller-tag { color: #86868b; font-weight: 700; font-size: 0.9rem; margin-bottom: 20px; display: block; text-transform: uppercase; }
         .price-tag { font-size: 2rem; font-weight: 700; margin: 20px 0; }
         .description { line-height: 1.6; color: #424245; margin-bottom: 30px; font-size: 1.1rem; }
-
         .stock-status { margin-bottom: 20px; font-weight: 600; }
         .in-stock { color: #34c759; }
         .out-of-stock { color: #ff3b30; }
-
         .actions { display: flex; gap: 15px; }
         .btn { flex: 1; padding: 18px; border-radius: 15px; font-weight: 700; cursor: pointer; border: none; font-size: 1rem; transition: 0.2s; }
         .btn-add { background: var(--primary); color: #fff; }
         .btn-fav { background: var(--secondary); width: 60px; flex: none; display: flex; align-items: center; justify-content: center; }
-
-        @media (max-width: 768px) {
-            .container { grid-template-columns: 1fr; }
-            .product-info h1 { font-size: 2rem; }
-        }
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } .product-info h1 { font-size: 2rem; } }
     </style>
 </head>
 <body>
-
 <div class="container" id="product-detail">
-    <div class="product-gallery">
-        <img id="p-img" src="" alt="Ürün" class="main-img" onerror="this.src='https://via.placeholder.com/600x600?text=Resim+Yüklenemedi'">
-    </div>
-
+    <div class="product-gallery"><img id="p-img" src="" alt="Ürün" class="main-img" onerror="this.src='https://via.placeholder.com/600x600?text=Resim+Yüklenemedi'"></div>
     <div class="product-info">
-        <span class="seller-tag">Yükleniyor...</span>
-        <h1 id="p-name">Yükleniyor...</h1>
+        <span class="seller-tag">YÜKLENİYOR...</span>
+        <h1 id="p-name">Ürün İsmi</h1>
         <div id="p-stock" class="stock-status"></div>
         <div class="price-tag" id="p-price">0 TL</div>
         <p class="description" id="p-desc">Ürün detayları hazırlanıyor...</p>
@@ -60,33 +47,20 @@
     const SUPABASE_URL = 'https://acxxlnnwwlujixymjane.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get('id');
 
     async function urunGetir() {
         if (!productId) return;
-
-        // İlişkili profili çekmek için sorgu yapısı güncellendi
         const { data: product, error } = await supabaseClient
             .from('products')
-            .select(`
-                *,
-                profiles:seller_id (
-                    company_name
-                )
-            `)
+            .select('*, profiles!seller_id(company_name)')
             .eq('id', productId)
             .single();
 
-        if (error || !product) {
-            document.body.innerHTML = "<h1>Ürün bulunamadı.</h1>";
-            return;
-        }
+        if (error || !product) { document.body.innerHTML = "<h1>Ürün bulunamadı.</h1>"; return; }
 
-        // Mağaza adını yerleştir
         document.querySelector('.seller-tag').innerText = product.profiles?.company_name || 'Bireysel Satıcı';
-
         document.getElementById('p-name').innerText = product.name;
         document.getElementById('p-price').innerText = product.price.toLocaleString() + " TL";
         document.getElementById('p-img').src = product.image_url || '';
@@ -108,7 +82,6 @@
         localStorage.setItem('dokuzfena_sepet', JSON.stringify(sepet));
         alert("Ürün sepete eklendi!");
     }
-
     urunGetir();
 </script>
 </body>
