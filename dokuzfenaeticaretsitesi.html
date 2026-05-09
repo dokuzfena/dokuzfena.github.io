@@ -11,7 +11,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--primary); }
 
-        /* Navbar Tasarımı */
         nav {
             padding: 15px 5%;
             display: flex;
@@ -48,7 +47,6 @@
             font-size: 0.9rem;
         }
 
-        /* Ürün Listesi */
         .products-grid {
             padding: 40px 5%;
             display: grid;
@@ -112,7 +110,6 @@
             color: var(--primary);
         }
 
-        /* Boş Durum */
         .empty-state {
             grid-column: 1 / -1;
             text-align: center;
@@ -147,12 +144,10 @@
 </div>
 
 <script>
-    // Supabase Konfigürasyonu
     const SUPABASE_URL = 'https://acxxlnnwwlujixymjane.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 1. Profil Yönlendirme (Akıllı Kontrol)
     async function profileYonlendir() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
@@ -162,11 +157,11 @@
         }
     }
 
-    // 2. Ürünleri Veritabanından Çek
     async function urunleriGetir() {
+        // Değişiklik: profiles tablosundan company_name çekiliyor
         const { data: products, error } = await supabaseClient
             .from('products')
-            .select('*')
+            .select('*, profiles(company_name)')
             .order('created_at', { ascending: false });
 
         const container = document.getElementById('productContainer');
@@ -188,14 +183,13 @@
                          class="product-img" 
                          onerror="this.src='https://via.placeholder.com/400x400?text=Resim+Hazırlanıyor'">
                 </div>
-                <span class="seller-badge">BİREYSEL SATICI</span>
+                <span class="seller-badge">${p.profiles?.company_name || 'Bireysel Satıcı'}</span>
                 <h3>${p.name}</h3>
                 <p class="price">${p.price.toLocaleString()} TL</p>
             </div>
         `).join('');
     }
 
-    // 3. Basit Arama Fonksiyonu
     function aramaYap() {
         const input = document.getElementById('searchInput').value.toLowerCase();
         const cards = document.getElementsByClassName('product-card');
@@ -210,7 +204,6 @@
         }
     }
 
-    // Sayfa açıldığında ürünleri yükle
     urunleriGetir();
 </script>
 </body>
