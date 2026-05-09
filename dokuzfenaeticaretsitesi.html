@@ -158,49 +158,47 @@
     }
 
     async function urunleriGetir() {
-        // Değişiklik: profiles tablosundan company_name çekiliyor
+        // 'profiles' tablosundan 'company_name' verisini çekiyoruz
         const { data: products, error } = await supabaseClient
             .from('products')
-            .select('*, profiles(company_name)')
+            .select(`
+                *,
+                profiles:seller_id (
+                    company_name
+                )
+            `)
             .order('created_at', { ascending: false });
 
         const container = document.getElementById('productContainer');
         
         if (error || !products || products.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1170/1170577.png" width="80" style="opacity: 0.2; margin-bottom: 20px;">
-                    <p>Henüz ürün eklenmemiş.</p>
-                </div>`;
+            container.innerHTML = `<div class="empty-state"><p>Henüz ürün eklenmemiş.</p></div>`;
             return;
         }
 
-        container.innerHTML = products.map(p => `
-            <div class="product-card" onclick="window.location.href='dokuzfenaeticareturun.html?id=${p.id}'">
-                <div class="img-container">
-                    <img src="${p.image_url || ''}" 
-                         alt="${p.name}" 
-                         class="product-img" 
-                         onerror="this.src='https://via.placeholder.com/400x400?text=Resim+Hazırlanıyor'">
+        container.innerHTML = products.map(p => {
+            // Mağaza ismini kontrol et, yoksa Bireysel Satıcı yaz
+            const storeName = p.profiles?.company_name || 'Bireysel Satıcı';
+            
+            return `
+                <div class="product-card" onclick="window.location.href='dokuzfenaeticareturun.html?id=${p.id}'">
+                    <div class="img-container">
+                        <img src="${p.image_url || ''}" class="product-img" onerror="this.src='https://via.placeholder.com/400x400?text=Resim+Hazırlanıyor'">
+                    </div>
+                    <span class="seller-badge">${storeName}</span>
+                    <h3>${p.name}</h3>
+                    <p class="price">${p.price.toLocaleString()} TL</p>
                 </div>
-                <span class="seller-badge">${p.profiles?.company_name || 'Bireysel Satıcı'}</span>
-                <h3>${p.name}</h3>
-                <p class="price">${p.price.toLocaleString()} TL</p>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     function aramaYap() {
         const input = document.getElementById('searchInput').value.toLowerCase();
         const cards = document.getElementsByClassName('product-card');
-
         for (let i = 0; i < cards.length; i++) {
             const title = cards[i].getElementsByTagName('h3')[0].innerText.toLowerCase();
-            if (title.includes(input)) {
-                cards[i].style.display = "";
-            } else {
-                cards[i].style.display = "none";
-            }
+            cards[i].style.display = title.includes(input) ? "" : "none";
         }
     }
 
