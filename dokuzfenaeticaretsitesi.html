@@ -156,7 +156,7 @@
     async function profileYonlendir() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
-            window.location.href = 'dokuzfenahesabim.html';
+            window.location.href = 'dokuzfenaeticarethesabim.html';
         } else {
             window.location.href = 'dokuzfenaeticaretauth.html';
         }
