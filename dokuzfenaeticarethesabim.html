@@ -7,43 +7,44 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --blue: #0071e3; }
+        :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --accent: #0071e3; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--primary); padding-bottom: 50px; }
+        body { background: var(--bg); color: var(--primary); }
 
         .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
         h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 30px; letter-spacing: -1.5px; }
 
-        /* Profil Kartı */
-        .card { background: var(--secondary); border-radius: 28px; padding: 30px; margin-bottom: 20px; }
-        .profile-row { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
-        .avatar { width: 70px; height: 70px; background: #000; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; }
+        .card { background: var(--secondary); border-radius: 28px; padding: 35px; margin-bottom: 25px; position: relative; }
         
-        /* Form Alanları */
-        .info-group { margin-bottom: 20px; }
-        .info-label { font-size: 0.8rem; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 8px; display: block; }
-        .info-value { font-size: 1.1rem; font-weight: 600; }
+        /* Sekme Menüsü */
+        .tab-menu { display: flex; gap: 25px; margin-bottom: 30px; border-bottom: 1px solid var(--secondary); }
+        .tab-item { cursor: pointer; font-weight: 600; color: #86868b; padding-bottom: 10px; transition: 0.2s; }
+        .tab-item.active { color: #000; border-bottom: 2px solid #000; }
+
+        /* Bilgi Grupları */
+        .info-group { margin-bottom: 25px; }
+        .label { font-size: 0.8rem; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 6px; display: block; }
+        .value { font-size: 1.15rem; font-weight: 600; min-height: 24px; }
         
+        /* Düzenleme Modu Inputları */
         input, textarea {
-            width: 100%; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border);
-            font-size: 1rem; margin-top: 5px; outline: none; transition: 0.2s;
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
+            font-size: 1rem; margin-top: 5px; display: none; /* Varsayılan gizli */
         }
-        input:focus { border-color: var(--primary); }
 
         /* Butonlar */
-        .btn { 
-            padding: 12px 25px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; 
-            transition: 0.2s; font-size: 0.9rem;
-        }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover { opacity: 0.8; }
-        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); margin-top: 10px; }
-
-        .logout-link { color: #ff3b30; text-decoration: none; font-weight: 700; display: block; margin-top: 30px; cursor: pointer; }
+        .btn { padding: 12px 24px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; border: none; font-size: 0.9rem; }
+        .btn-edit { background: var(--primary); color: #fff; margin-bottom: 20px; }
+        .btn-save { background: #34c759; color: #fff; display: none; margin-right: 10px; }
+        .btn-cancel { background: #ff3b30; color: #fff; display: none; }
         
-        .tab-menu { display: flex; gap: 20px; margin-bottom: 30px; border-bottom: 1px solid var(--secondary); padding-bottom: 10px; }
-        .tab-item { cursor: pointer; font-weight: 600; color: #86868b; }
-        .tab-item.active { color: #000; border-bottom: 2px solid #000; padding-bottom: 8px; }
+        .logout { color: #ff3b30; font-weight: 700; cursor: pointer; display: block; margin-top: 40px; }
+        
+        /* Düzenleme Modu Aktifken */
+        .editing .value { display: none; }
+        .editing input, .editing textarea { display: block; }
+        .editing .btn-save, .editing .btn-cancel { display: inline-block; }
+        .editing .btn-edit { display: none; }
     </style>
 </head>
 <body>
@@ -52,116 +53,123 @@
     <h1>Hesabım</h1>
 
     <div class="tab-menu">
-        <div class="tab-item active" onclick="switchTab('profil')">Profil Bilgileri</div>
-        <div class="tab-item" onclick="switchTab('adres')">Adres Yönetimi</div>
-        <div class="tab-item" onclick="switchTab('siparis')">Siparişlerim</div>
+        <div class="tab-item active" id="t1" onclick="switchTab('profil')">Profil</div>
+        <div class="tab-item" id="t2" onclick="switchTab('adres')">Adres</div>
+        <div class="tab-item" id="t3" onclick="switchTab('siparis')">Siparişlerim</div>
     </div>
 
-    <div id="tab-profil">
-        <div class="card">
-            <div class="profile-row">
-                <div class="avatar" id="avatarLetter">?</div>
-                <div>
-                    <p class="info-label">Kullanıcı Adı</p>
-                    <div class="info-value" id="disp_name">Yükleniyor...</div>
-                </div>
+    <div id="settings-content" class="card">
+        <button class="btn btn-edit" id="edit-btn" onclick="toggleEdit(true)">✏️ Bilgilerimi Düzenle</button>
+        
+        <div id="profil-fields">
+            <div class="info-group">
+                <span class="label">Ad Soyad</span>
+                <div class="value" id="view_name">...</div>
+                <input type="text" id="input_name">
             </div>
             <div class="info-group">
-                <span class="info-label">E-posta Adresi</span>
-                <div class="info-value" id="disp_email">...</div>
+                <span class="label">E-posta</span>
+                <div class="value" id="view_email" style="color: #86868b;">...</div>
             </div>
             <div class="info-group">
-                <span class="info-label">Telefon Numarası</span>
-                <input type="text" id="input_phone" placeholder="Telefon numaranızı ekleyin">
+                <span class="label">Telefon</span>
+                <div class="value" id="view_phone">Henüz eklenmedi</div>
+                <input type="text" id="input_phone">
             </div>
-            <button class="btn btn-primary" onclick="guncelleProfil()">Bilgileri Kaydet</button>
         </div>
-    </div>
 
-    <div id="tab-adres" style="display: none;">
-        <div class="card">
-            <span class="info-label">Teslimat Adresi</span>
-            <textarea id="input_address" rows="4" placeholder="Açık adresinizi buraya yazın..."></textarea>
-            <p style="font-size: 0.8rem; color: gray; margin-top: 10px;">* Siparişleriniz bu adrese gönderilecektir.</p>
-            <button class="btn btn-primary" style="margin-top: 15px;" onclick="guncelleProfil()">Adresi Güncelle</button>
+        <div id="adres-fields" style="display: none;">
+            <div class="info-group">
+                <span class="label">Kayıtlı Adres</span>
+                <div class="value" id="view_address">Adres eklenmemiş.</div>
+                <textarea id="input_address" rows="4"></textarea>
+            </div>
         </div>
-    </div>
 
-    <div id="tab-siparis" style="display: none;">
-        <div class="card">
+        <div id="siparis-fields" style="display: none;">
             <p>Henüz bir siparişiniz bulunmuyor.</p>
-            <button class="btn btn-outline" onclick="location.href='dokuzfenaeticaretsitesi.html'">Alışverişe Başla</button>
+        </div>
+
+        <div class="edit-controls">
+            <button class="btn btn-save" onclick="saveData()">✅ Değişiklikleri Kaydet</button>
+            <button class="btn btn-cancel" onclick="toggleEdit(false)">❌ İptal</button>
         </div>
     </div>
 
-    <span class="logout-link" onclick="cikisYap()">🚪 Oturumu Kapat</span>
+    <span class="logout" onclick="logout()">Oturumu Kapat</span>
 </div>
 
 <script>
     const SUPABASE_URL = 'https://acxxlnnwwlujixymjane.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_o1WpQx7kNvGv6OwT8i_MSA_rTf0Guf-';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let userId = null;
 
-    let currentUserId = null;
-
-    async function verileriYukle() {
+    async function loadUser() {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) { window.location.href = 'dokuzfenaeticaretauth.html'; return; }
+        userId = user.id;
+
+        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
         
-        currentUserId = user.id;
-        document.getElementById('disp_email').innerText = user.email;
+        // Görünüm (View) Modunu Doldur
+        document.getElementById('view_name').innerText = profile.full_name || "İsimsiz";
+        document.getElementById('view_email').innerText = user.email;
+        document.getElementById('view_phone').innerText = profile.phone || "Ekle";
+        document.getElementById('view_address').innerText = profile.company_name || "Eklenmemiş";
 
-        const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-        if (profile) {
-            document.getElementById('disp_name').innerText = profile.full_name || "İsimsiz Kullanıcı";
-            document.getElementById('avatarLetter').innerText = (profile.full_name || "U").charAt(0).toUpperCase();
-            document.getElementById('input_phone').value = profile.phone || "";
-            document.getElementById('input_address').value = profile.company_name || ""; // company_name'i adres alanı olarak kullanıyoruz
-        }
+        // Inputları Doldur (Düzenleme için hazırlık)
+        document.getElementById('input_name').value = profile.full_name || "";
+        document.getElementById('input_phone').value = profile.phone || "";
+        document.getElementById('input_address').value = profile.company_name || "";
     }
 
-    async function guncelleProfil() {
-        const phone = document.getElementById('input_phone').value;
-        const address = document.getElementById('input_address').value;
+    function toggleEdit(isEditing) {
+        const card = document.getElementById('settings-content');
+        if (isEditing) card.classList.add('editing');
+        else card.classList.remove('editing');
+    }
 
-        const { error } = await supabaseClient
-            .from('profiles')
-            .update({ 
-                phone: phone,
-                company_name: address // Adres bilgisini bu kolona kaydediyoruz
-            })
-            .eq('id', currentUserId);
+    async function saveData() {
+        const newName = document.getElementById('input_name').value;
+        const newPhone = document.getElementById('input_phone').value;
+        const newAddress = document.getElementById('input_address').value;
 
-        if (error) {
-            alert("Hata oluştu: " + error.message);
+        const { error } = await supabaseClient.from('profiles').update({
+            full_name: newName,
+            phone: newPhone,
+            company_name: newAddress
+        }).eq('id', userId);
+
+        if (!error) {
+            alert("Profiliniz güncellendi!");
+            toggleEdit(false);
+            loadUser();
         } else {
-            alert("Bilgileriniz başarıyla güncellendi!");
-            verileriYukle();
+            alert("Hata: " + error.message);
         }
     }
 
-    function switchTab(tabName) {
-        document.getElementById('tab-profil').style.display = tabName === 'profil' ? 'block' : 'none';
-        document.getElementById('tab-adres').style.display = tabName === 'adres' ? 'block' : 'none';
-        document.getElementById('tab-siparis').style.display = tabName === 'siparis' ? 'block' : 'none';
+    function switchTab(type) {
+        document.getElementById('profil-fields').style.display = type === 'profil' ? 'block' : 'none';
+        document.getElementById('adres-fields').style.display = type === 'adres' ? 'block' : 'none';
+        document.getElementById('siparis-fields').style.display = type === 'siparis' ? 'block' : 'none';
+        document.getElementById('edit-btn').style.display = type === 'siparis' ? 'none' : 'block';
         
-        // Aktif tab stilini güncelle
-        const tabs = document.querySelectorAll('.tab-item');
-        tabs.forEach(t => t.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        if(type === 'profil') document.getElementById('t1').classList.add('active');
+        if(type === 'adres') document.getElementById('t2').classList.add('active');
+        if(type === 'siparis') document.getElementById('t3').classList.add('active');
+        
+        toggleEdit(false); // Sekme değiştirince düzenleme modunu kapat
     }
 
-    async function cikisYap() {
+    async function logout() {
         await supabaseClient.auth.signOut();
         window.location.href = 'dokuzfenaeticaretsitesi.html';
     }
 
-    verileriYukle();
+    loadUser();
 </script>
 </body>
 </html>
