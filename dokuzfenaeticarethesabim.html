@@ -7,11 +7,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --accent: #0071e3; }
+        :root { --primary: #000; --bg: #fff; --secondary: #f5f5f7; --border: #d2d2d7; --accent: #0071e3; --danger: #ff3b30; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--primary); display: flex; min-height: 100vh; }
 
-        .sidebar { width: 280px; background: var(--secondary); padding: 40px 20px; display: flex; flex-direction: column; border-right: 1px solid rgba(0,0,0,0.05); }
+        .sidebar { width: 280px; background: var(--secondary); padding: 40px 20px; display: flex; flex-direction: column; border-right: 1px solid rgba(0,0,0,0.05); position: fixed; height: 100vh; }
         .sidebar h2 { font-weight: 800; font-size: 1.2rem; margin-bottom: 40px; letter-spacing: -1px; }
         
         .nav-btn { 
@@ -20,8 +20,12 @@
             display: flex; align-items: center; gap: 12px; transition: 0.2s;
         }
         .nav-btn.active { background: var(--primary); color: #fff; }
+        .nav-btn:hover:not(.active) { background: rgba(0,0,0,0.05); }
+        
+        /* Çıkış butonu için özel stil */
+        .btn-logout { color: var(--danger); margin-top: auto; font-weight: 700; }
 
-        .main-content { flex: 1; padding: 60px 8%; max-width: 1000px; }
+        .main-content { flex: 1; padding: 60px 8%; margin-left: 280px; max-width: 1280px; }
         .section { display: none; }
         .section.active { display: block; }
 
@@ -32,7 +36,6 @@
         .info-label { display: block; font-size: 0.75rem; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 4px; }
         .info-value { font-size: 1.1rem; font-weight: 500; min-height: 1.5rem; }
 
-        /* Düzenleme Modu Gizli */
         #edit-form { display: none; }
         .input-group { margin-bottom: 20px; }
         input, textarea { width: 100%; padding: 15px; border-radius: 12px; border: 1.5px solid var(--border); font-size: 1rem; outline: none; background: #fafafa; }
@@ -44,7 +47,9 @@
         
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; padding: 20px; border-right: none; border-bottom: 1px solid #eee; }
+            .sidebar { width: 100%; height: auto; padding: 20px; border-right: none; border-bottom: 1px solid #eee; position: static; }
+            .main-content { margin-left: 0; padding: 30px 20px; }
+            .btn-logout { margin-top: 20px; }
         }
     </style>
 </head>
@@ -55,6 +60,7 @@
     <button class="nav-btn active" id="btn-profile" onclick="showSection('profile')">👤 Profilim</button>
     <button class="nav-btn" id="btn-orders" onclick="showSection('orders')">📦 Siparişlerim</button>
     <button class="nav-btn" id="btn-security" onclick="showSection('security')">🔒 Güvenlik</button>
+    <button class="nav-btn btn-logout" onclick="handleLogout()">🚪 Çıkış Yap</button>
 </div>
 
 <div class="main-content">
@@ -113,7 +119,7 @@
                 <label>Yeni Şifre</label>
                 <input type="password" id="newPassword">
             </div>
-            <button class="btn-save" onclick="sifreGuncelle()">Şifreyi Güncelle</button>
+            <button class="btn-action" onclick="sifreGuncelle()">Şifreyi Güncelle</button>
         </div>
     </div>
 </div>
@@ -129,17 +135,23 @@
         loadProfileData();
     }
 
+    // Çıkış Yapma Fonksiyonu
+    async function handleLogout() {
+        if(confirm("Çıkış yapmak istediğinize emin misiniz?")) {
+            const { error } = await supabaseClient.auth.signOut();
+            if (!error) window.location.href = 'dokuzfenaeticaretauth.html';
+        }
+    }
+
     async function loadProfileData() {
         const { data: { user } } = await supabaseClient.auth.getUser();
         const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
         
         if (profile) {
-            // Görüntüleme alanları
             document.getElementById('display-fullName').innerText = profile.full_name || 'Girilmemiş';
             document.getElementById('display-phone').innerText = profile.phone || 'Girilmemiş';
             document.getElementById('display-address').innerText = profile.company_name || 'Girilmemiş';
 
-            // Form alanları (düzenleme için hazır bekler)
             document.getElementById('fullName').value = profile.full_name || '';
             document.getElementById('phone').value = profile.phone || '';
             document.getElementById('address').value = profile.company_name || '';
@@ -202,10 +214,18 @@
         if (error) alert("Hata: " + error.message);
         else {
             alert("Profiliniz güncellendi!");
-            loadProfileData(); // Verileri tekrar çek
-            toggleEdit(false); // Görüntüleme moduna dön
+            loadProfileData();
+            toggleEdit(false);
         }
     };
+
+    async function sifreGuncelle() {
+        const newPass = document.getElementById('newPassword').value;
+        if(newPass.length < 6) { alert("Şifre en az 6 karakter olmalıdır."); return; }
+        const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+        if(error) alert("Hata: " + error.message);
+        else alert("Şifre başarıyla güncellendi!");
+    }
 
     init();
 </script>
