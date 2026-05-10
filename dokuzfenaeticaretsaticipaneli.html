@@ -68,13 +68,6 @@
         .stock-input { width: 60px !important; padding: 5px !important; font-size: 0.8rem !important; margin: 0 5px; }
         .btn-stock { padding: 6px 10px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 0.7rem; cursor: pointer; }
 
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: 70px; flex-direction: row; bottom: 0; top: auto; padding: 10px 5%; border-right: none; border-top: 1px solid var(--border); justify-content: space-around; }
-            .sidebar h2 { display: none; }
-            .nav-btn { width: auto; padding: 10px; flex-direction: column; font-size: 0.7rem; }
-            .main-content { margin-left: 0; padding: 20px 5% 100px 5%; }
-        }
-
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px; border-bottom: 2px solid #f5f5f7; font-size: 0.8rem; color: var(--text-secondary); }
         td { padding: 15px 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
@@ -153,7 +146,13 @@
     }
 
     async function loadProducts() {
-        const { data } = await supabaseClient.from('products').select('*').eq('seller_id', userSession.id);
+        // Sadece silinmemiş (is_active: true) ürünleri gösteriyoruz
+        const { data } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('seller_id', userSession.id)
+            .neq('is_active', false); // is_active sütununuz yoksa bile hata vermez, eklemeniz önerilir
+
         const tbody = document.getElementById('productTableBody');
         tbody.innerHTML = data?.map(p => `
             <tr>
@@ -211,7 +210,7 @@
     }
 
     async function updateStatus(orderId, newStatus) {
-        const { error } = await supabaseClient.from('orders').update({ status: newStatus }).eq('id', orderId).select();
+        const { error } = await supabaseClient.from('orders').update({ status: newStatus }).eq('id', orderId);
         if (error) alert("Hata: " + error.message);
         else loadSales();
     }
@@ -224,20 +223,37 @@
             image_url: document.getElementById('pImg').value,
             description: document.getElementById('pDesc').value,
             price: document.getElementById('pPrice').value,
-            stock: document.getElementById('pStock').value
+            stock: document.getElementById('pStock').value,
+            is_active: true // Yeni ürünler varsayılan aktif
         }]);
         if (error) alert("Hata: " + error.message);
         else { alert("Ürün eklendi!"); loadProducts(); e.target.reset(); }
     };
 
+    // GÜNCELLENEN SİLME FONKSİYONU:
     async function deleteProduct(id) {
-        if(confirm("Silinsin mi?")) { await supabaseClient.from('products').delete().eq('id', id); loadProducts(); }
+        if(confirm("Bu ürünü satıştan kaldırmak istediğinize emin misiniz? (Geçmiş siparişleriniz bozulmaz)")) {
+            // Tamamen silmek yerine is_active değerini güncelliyoruz
+            // Eğer is_active sütunu yoksa, veritabanından tamamen silmeyi dener ama sipariş varsa hata verir
+            const { error } = await supabaseClient
+                .from('products')
+                .update({ is_active: false })
+                .eq('id', id);
+            
+            if(error) {
+                // Eğer is_active sütunu yoksa ve hata verirse, eski usul silmeyi dener
+                const { error: delError } = await supabaseClient.from('products').delete().eq('id', id);
+                if(delError) alert("Hata: Bu ürün sipariş edildiği için silinemez. Önce veritabanına 'is_active' sütunu eklemelisiniz.");
+                else loadProducts();
+            } else {
+                loadProducts();
+            }
+        }
     }
 
-    // ÇIKIŞ BUTONU DÜZELTİLDİ: .auth eklendi
     async function handleLogout() { 
         await supabaseClient.auth.signOut(); 
-        window.location.href = 'dokuzfenaeticaretauth.html';
+        window.location.href = 'dokuzfenaeticaretauth.html'; 
     }
 
     init();
